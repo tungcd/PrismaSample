@@ -1,0 +1,144 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: smart-canteen-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secure_password
+      POSTGRES_DB: smart_canteen
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U admin -d smart_canteen']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smart-canteen-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: smart-canteen-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smart-canteen-network
+
+  # CMS Admin App
+  cms:
+    image: node:18-alpine
+    container_name: smart-canteen-cms
+    restart: "no"
+    working_dir: /app/apps/cms
+    command: sh -c "apk add --no-cache python3 make g++ openssl-dev openssl && npm install && npx prisma generate && npm run dev"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://admin:secure_password@postgres:5432/smart_canteen?schema=public
+      - REDIS_URL=redis://redis:6379
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=your-super-secret-key-change-this-in-production
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./apps/cms:/app/apps/cms
+      - cms_node_modules:/app/apps/cms/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - smart-canteen-network
+
+  # Client App
+  client:
+    image: node:18-alpine
+    container_name: smart-canteen-client
+    restart: "no"
+    working_dir: /app/apps/client
+    command: sh -c "apk add --no-cache python3 make g++ openssl-dev openssl && npm install && npx prisma generate && npm run dev"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://admin:secure_password@postgres:5432/smart_canteen?schema=public
+      - REDIS_URL=redis://redis:6379
+      - NEXTAUTH_URL=http://localhost:3001
+      - NEXTAUTH_SECRET=your-super-secret-key-change-this-in-production
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    ports:
+      - '3001:3001'
+    volumes:
+      - ./apps/client:/app/apps/client
+      - client_node_modules:/app/apps/client/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - smart-canteen-network
+
+  # NestJS API
+  api:
+    image: node:18-alpine
+    container_name: smart-canteen-api
+    restart: "no"
+    working_dir: /app/apps/api
+    command: sh -c "apk add --no-cache python3 make g++ openssl-dev openssl && npm install && npx prisma generate && npm run dev"
+    environment:
+      - NODE_ENV=development
+      - PORT=4000
+      - DATABASE_URL=postgresql://admin:secure_password@postgres:5432/smart_canteen?schema=public
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+      - JWT_EXPIRES_IN=7d
+      - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
+      - NO_COLOR=true
+      - PRISMA_QUERY_ENGINE_LIBRARY=/app/apps/api/node_modules/.prisma/client/libquery_engine-linux-musl-openssl-3.0.x.so.node
+    ports:
+      - '4000:4000'
+    volumes:
+      - ./apps/api:/app/apps/api
+      - api_node_modules:/app/apps/api/node_modules
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - smart-canteen-network
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  cms_node_modules:
+    driver: local
+  client_node_modules:
+    driver: local
+  api_node_modules:
+    driver: local
+
+networks:
+  smart-canteen-network:
+    driver: bridge

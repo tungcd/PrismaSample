@@ -1,0 +1,117 @@
+# Production Docker Compose Configuration
+version: '3.9'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: smart-canteen-db-prod
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
+      POSTGRES_DB: ${POSTGRES_DB:-smart_canteen}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-smart_canteen}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smart-canteen-network-prod
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: smart-canteen-redis-prod
+    restart: always
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-your_redis_password}
+    volumes:
+      - redis_data_prod:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - smart-canteen-network-prod
+
+  # CMS Admin App
+  cms:
+    build:
+      context: .
+      dockerfile: apps/cms/Dockerfile
+    container_name: smart-canteen-cms-prod
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXTAUTH_URL=${NEXTAUTH_URL_CMS}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET_CMS}
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - smart-canteen-network-prod
+
+  # Client App
+  client:
+    build:
+      context: .
+      dockerfile: apps/client/Dockerfile
+    container_name: smart-canteen-client-prod
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=${DATABASE_URL}
+      - NEXTAUTH_URL=${NEXTAUTH_URL_CLIENT}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET_CLIENT}
+    ports:
+      - '3001:3001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - smart-canteen-network-prod
+
+  # NestJS API
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: smart-canteen-api-prod
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=4000
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN:-7d}
+      - CORS_ORIGINS=${CORS_ORIGINS}
+    ports:
+      - '4000:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - smart-canteen-network-prod
+
+volumes:
+  postgres_data_prod:
+    driver: local
+  redis_data_prod:
+    driver: local
+
+networks:
+  smart-canteen-network-prod:
+    driver: bridge

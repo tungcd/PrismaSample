@@ -50,7 +50,7 @@ export function DataTable<T extends { id: string | number }>({
   const [isPending, startTransition] = useTransition();
 
   const [data, setData] = useState(result.data);
-  const [loading, setLoading] = useState<string | null>(null);
+  const [loading, setLoading] = useState<string | number | null>(null);
 
   // Local state for debounced filters
   const [textFilters, setTextFilters] = useState<Record<string, string>>({});

@@ -1,10 +1,15 @@
 import { ProductEntity } from "@/domain/entities/product.entity";
-import { productRepository } from "@/infrastructure/database/repositories/product.repository";
+import {
+  IProductRepository,
+  FindProductsParams,
+} from "@/domain/repositories/product.repository.interface";
 
 export class GetAllProductsUseCase {
-  async execute(): Promise<ProductEntity[]> {
-    return productRepository.findAll();
+  constructor(private productRepository: IProductRepository) {}
+
+  async execute(
+    params: FindProductsParams,
+  ): Promise<{ products: ProductEntity[]; total: number }> {
+    return this.productRepository.findMany(params);
   }
 }
-
-export const getAllProductsUseCase = new GetAllProductsUseCase();

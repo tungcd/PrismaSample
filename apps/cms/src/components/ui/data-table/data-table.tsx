@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Table,
@@ -36,25 +36,27 @@ import type {
   DataTableColumn,
 } from "@/types/data-table.types";
 
-interface DataTableProps<T extends { id: string }> {
+interface DataTableProps<T extends { id: string | number }> {
   result: PaginatedResult<T>;
   config: DataTableConfig<T>;
 }
 
-export function DataTable<T extends { id: string }>({
+export function DataTable<T extends { id: string | number }>({
   result,
   config,
 }: DataTableProps<T>) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   const [data, setData] = useState(result.data);
   const [loading, setLoading] = useState<string | null>(null);
 
   // Local state for debounced filters
   const [textFilters, setTextFilters] = useState<Record<string, string>>({});
+  const [isInitialized, setIsInitialized] = useState(false);
 
-  // Initialize text filters from URL
+  // Initialize text filters from URL (only once on mount)
   useEffect(() => {
     const filters: Record<string, string> = {};
     config.columns.forEach((col) => {
@@ -63,10 +65,13 @@ export function DataTable<T extends { id: string }>({
       }
     });
     setTextFilters(filters);
-  }, [searchParams]);
+    setIsInitialized(true);
+  }, []); // Empty dependency - only run once on mount
 
-  // Debounce text filter changes
+  // Debounce text filter changes (skip on initial render)
   useEffect(() => {
+    if (!isInitialized) return; // Skip on initial render
+
     const debouncedColumns = config.columns.filter(
       (col) =>
         col.filterable &&
@@ -88,12 +93,15 @@ export function DataTable<T extends { id: string }>({
         }
       });
 
-      params.set("page", "1");
-      router.push(`?${params.toString()}`);
+      params.set("page", "1"); // Reset to page 1 only when filter changes
+
+      startTransition(() => {
+        router.push(`?${params.toString()}`);
+      });
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [textFilters]);
+  }, [textFilters, isInitialized]); // Only trigger when textFilters change (not searchParams)
 
   // Update data when result changes
   useEffect(() => {
@@ -111,7 +119,14 @@ export function DataTable<T extends { id: string }>({
       }
     });
 
-    router.push(`?${params.toString()}`);
+    startTransition(() => {
+      router.push(`?${params.toString()}`);
+    });
+
+    // Scroll to top when changing pages
+    if (updates.page) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const handleSelectFilterChange = (key: string, value: string) => {
@@ -184,7 +199,9 @@ export function DataTable<T extends { id: string }>({
     });
     setTextFilters(emptyFilters);
 
-    router.push(`?${params.toString()}`);
+    startTransition(() => {
+      router.push(`?${params.toString()}`);
+    });
   };
 
   const renderFilter = (column: DataTableColumn<T>) => {

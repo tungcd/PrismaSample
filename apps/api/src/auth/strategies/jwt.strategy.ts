@@ -5,7 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { Role } from "@prisma/client";
 
 export interface JwtPayload {
-  sub: string;
+  sub: number; // ✅ Changed from string to number (March 2026)
   email: string;
   role: Role;
 }

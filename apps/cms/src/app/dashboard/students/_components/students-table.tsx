@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { StudentEntity } from "@/domain/entities/student.entity";
 import type { GetStudentsResult } from "@/application/use-cases/student/get-all-students.use-case";
@@ -23,6 +23,7 @@ interface StudentsTableProps {
 
 export function StudentsTable({ data, schools }: StudentsTableProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<StudentEntity | null>(
     null,
@@ -32,7 +33,9 @@ export function StudentsTable({ data, schools }: StudentsTableProps) {
     const result = await toggleStudentActiveAction(student.id);
     if (result.success && result.data) {
       toast.success("Cập nhật trạng thái thành công");
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     } else {
       toast.error(result.error || "Có lỗi xảy ra");
     }
@@ -43,7 +46,9 @@ export function StudentsTable({ data, schools }: StudentsTableProps) {
     const result = await deleteStudentAction(student.id);
     if (result.success) {
       toast.success("Xóa học sinh thành công");
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     } else {
       toast.error(result.error || "Có lỗi xảy ra");
     }
@@ -60,7 +65,9 @@ export function StudentsTable({ data, schools }: StudentsTableProps) {
   };
 
   const handleSuccess = () => {
-    router.refresh();
+    startTransition(() => {
+      router.refresh();
+    });
     setDialogOpen(false);
     setEditingStudent(null);
   };

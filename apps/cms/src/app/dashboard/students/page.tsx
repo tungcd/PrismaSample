@@ -16,6 +16,9 @@ interface StudentsPageProps {
   };
 }
 
+// Force dynamic rendering to prevent caching issues with pagination
+export const dynamic = "force-dynamic";
+
 export default async function StudentsPage({
   searchParams,
 }: StudentsPageProps) {

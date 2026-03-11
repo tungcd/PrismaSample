@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { UserEntity } from "@/domain/entities/user.entity";
 import type { GetUsersResult } from "@/application/use-cases/user/get-all-users.use-case";
@@ -22,6 +22,7 @@ interface UsersTableProps {
 
 export function UsersTable({ data }: UsersTableProps) {
   const router = useRouter();
+  const [isPending, startTransition] = useTransition();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserEntity | null>(null);
 
@@ -29,7 +30,9 @@ export function UsersTable({ data }: UsersTableProps) {
     const result = await toggleUserActiveAction(user.id);
     if (result.success && result.data) {
       toast.success("Cập nhật trạng thái thành công");
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     } else {
       toast.error(result.error || "Có lỗi xảy ra");
     }
@@ -40,7 +43,9 @@ export function UsersTable({ data }: UsersTableProps) {
     const result = await deleteUserAction(user.id);
     if (result.success) {
       toast.success("Xóa người dùng thành công");
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     } else {
       toast.error(result.error || "Có lỗi xảy ra");
     }
@@ -57,7 +62,9 @@ export function UsersTable({ data }: UsersTableProps) {
   };
 
   const handleSuccess = () => {
-    router.refresh();
+    startTransition(() => {
+      router.refresh();
+    });
     setDialogOpen(false);
     setEditingUser(null);
   };

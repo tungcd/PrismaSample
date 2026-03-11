@@ -15,6 +15,9 @@ interface UsersPageProps {
   };
 }
 
+// Force dynamic rendering to prevent caching issues with pagination
+export const dynamic = "force-dynamic";
+
 export default async function UsersPage({ searchParams }: UsersPageProps) {
   const params = {
     page: searchParams.page ? parseInt(searchParams.page) : 1,

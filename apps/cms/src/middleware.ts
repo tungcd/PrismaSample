@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
-export function middleware(request: NextRequest) {
+const JWT_SECRET =
+  process.env.JWT_SECRET || "your-secret-key-change-in-production";
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Public paths that don't require authentication
@@ -16,7 +20,20 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  return NextResponse.next();
+  // Verify JWT token to prevent fake/expired tokens
+  try {
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    await jwtVerify(token, secret);
+    // Token is valid, proceed
+    return NextResponse.next();
+  } catch (error) {
+    // Token is invalid/expired, redirect to login
+    console.error("Invalid token in middleware:", error);
+    const response = NextResponse.redirect(new URL("/login", request.url));
+    // Clear invalid token
+    response.cookies.delete("token");
+    return response;
+  }
 }
 
 export const config = {

@@ -1,1005 +1,822 @@
-# 🎉 Smart Canteen - Hệ Thống Quản Lý Căng Tin Thông Minh
+# Smart Canteen - AI Reference Guide
 
-> **Last Updated:** March 11, 2026  
-> **Version:** 2.0.0  
-> **Architecture:** Clean Architecture + Monorepo
+**Last Updated:** March 11, 2026 | **Version:** 2.0.0
 
----
+## Tech Stack
 
-## 📖 Mục Lục
+**Framework:** Next.js 14 (App Router), NestJS 10, TypeScript 5.3.3  
+**Database:** PostgreSQL 15 + Prisma 5.22.0 (ORM)  
+**Auth:** JWT (jose for middleware, jsonwebtoken for Server Actions/API)  
+**UI:** Tailwind CSS + Shadcn/ui + React Hook Form + Zod  
+**Monorepo:** Turborepo + pnpm  
+**Apps:** CMS (3000), Client (3001), API (4000)
 
-1. [Tổng Quan Dự Án](#-tổng-quan-dự-án)
-2. [Kiến Trúc Hệ Thống](#-kiến-trúc-hệ-thống)
-3. [Clean Architecture](#-clean-architecture)
-4. [Quy Trình Phát Triển Feature](#-quy-trình-phát-triển-feature)
-5. [Cấu Trúc Dự Án](#-cấu-trúc-dự-án)
-6. [Database Schema](#-database-schema)
-7. [API Documentation](#-api-documentation)
-8. [Setup & Deploy](#-setup--deploy)
-9. [Conventions & Best Practices](#-conventions--best-practices)
-10. [Roadmap](#-roadmap)
+## Security & Authentication (March 2026)
 
----
+**JWT-Based Authentication:**
 
-## 🎯 Tổng Quan Dự Án
+- Backend (NestJS) generates JWT tokens on login
+- Frontend stores token in cookie (httpOnly recommended in production)
+- Middleware verifies JWT on every request
+- **SOURCE OF TRUTH:** JWT token in cookies, NOT localStorage
 
-Smart Canteen là hệ thống quản lý căng tin trường học toàn diện với 3 ứng dụng chính:
+**Authorization Layers:**
 
-### 📱 **Ứng dụng đã triển khai**
+1. **Middleware** (`middleware.ts`): Verify JWT token using `jose` (Edge Runtime compatible), redirect if invalid
+2. **Server Actions** (`withAuth`, `withRole`): Role-based access using `jsonwebtoken` before DB operations
+3. **API Routes** (`requireAuth`, `requireRole`): Protect REST endpoints using `jsonwebtoken`
 
-| Ứng dụng        | Mô tả                          | Port | Tech Stack              |
-| --------------- | ------------------------------ | ---- | ----------------------- |
-| **CMS Admin**   | Quản trị viên quản lý hệ thống | 3000 | Next.js 14 (App Router) |
-| **Client App**  | Phụ huynh/học sinh đặt món     | 3001 | Next.js 14 (App Router) |
-| **API Backend** | RESTful API backend            | 4000 | NestJS 10 + Prisma      |
+**⚠️ Edge Runtime Constraint:**
 
-### 🎨 **Features Đã Hoàn Thành**
+- Next.js middleware runs in Edge Runtime (V8 isolate) without Node.js APIs
+- `jsonwebtoken` ❌ (uses Node.js crypto module - not available)
+- `jose` ✅ (uses Web Crypto API - Edge Runtime compatible)
+- Use `jose` for middleware, `jsonwebtoken` for Server Actions/API Routes
 
-#### CMS Admin (Port 3000)
+**Role Hierarchy:**
 
-- ✅ **Authentication & Authorization**
-  - NextAuth.js với JWT
-  - Role-based access (ADMIN, MANAGER, STAFF)
-  - Protected routes với middleware
-- ✅ **User Management** (CRUD + Validation)
-  - Danh sách users với pagination (10/20/50 items/page)
-  - Search theo tên, email, phone, role
-  - Sort theo các cột (Email, Name, Role, Status, Last Login)
-  - Create/Edit với react-hook-form + zod validation
-  - Toggle active/inactive status
-  - Soft delete (deletedAt)
-- ✅ **Student Management** (CRUD + Validation)
-  - Danh sách students với pagination
-  - Search theo tên, lớp, trường, số thẻ, phụ huynh
-  - Sort theo Name, Grade, School, Card Number, Status
-  - Form validation: cardNumber (uppercase + numbers only)
-  - Parent relationship management
-- ✅ **UI/UX Components**
-  - Shadcn/ui components (Table, Dialog, Select, Badge, etc.)
-  - Toast notifications (Sonner)
-  - Responsive design
-  - Loading states & error handling
+- `ADMIN`: Full access (create/update/delete users, students)
+- `MANAGER`: Manage users, students (no user deletion)
+- `STAFF`: Manage students only (no user management)
+- `PARENT`: Client app access only (not CMS)
 
-#### Database
+**Important Files:**
 
-- ✅ **Rich Seed Data** (Cập nhật mới)
-  - 53 users (3 staff + 50 parents)
-  - 120 students với parent ngẫu nhiên
-  - 32 products (8 breakfast, 9 lunch, 7 snacks, 8 drinks)
-  - 4 schools, 3 suppliers, 4 categories
-  - Perfect cho test pagination & filtering
+- `lib/auth-server.ts`: JWT verification, user extraction (server-side)
+- `lib/with-auth.ts`: HOF wrappers for Server Actions
+- `middleware.ts`: JWT verification on routes
+- `.env.local`: `JWT_SECRET` must match backend
 
----
+**Security Rules:**
 
-## 🏗️ Kiến Trúc Hệ Thống
+- ✅ All Server Actions protected with `withAuth()` or `withRole()`
+- ✅ All API routes protected with `requireAuth()` or `requireRole()`
+- ✅ JWT verified in middleware before any page access
+- ✅ Token expiration checked on every request
+- ❌ NEVER trust localStorage for authorization (client can modify)
+- ❌ NEVER trust client-side role checks for data access
 
-### Monorepo Structure
+**Code Examples:**
 
-```
-smart-canteen/
-├── apps/                         # Các ứng dụng độc lập
-│   ├── cms/                      # Admin CMS (Next.js)
-│   ├── client/                   # Client App (Next.js)
-│   └── api/                      # Backend API (NestJS)
-├── packages/                     # Shared packages
-│   └── prisma/                   # Prisma schema & client
-├── docker-compose.yml            # PostgreSQL + Redis
-└── turbo.json                    # Turborepo config
-```
-
-### Tech Stack
-
-**Frontend:**
-
-- Next.js 14 (App Router, Server Components)
-- React 18 with TypeScript
-- Tailwind CSS + Shadcn/ui
-- React Hook Form + Zod (validation)
-- NextAuth.js (authentication)
-
-**Backend:**
-
-- NestJS 10 with TypeScript
-- Prisma ORM (PostgreSQL)
-- Passport JWT (authentication)
-- Class-validator (DTOs)
-
-**Database:**
-
-- PostgreSQL 15
-- Redis (sessions & caching)
-
-**DevOps:**
-
-- Docker & Docker Compose
-- Turborepo (monorepo build)
-- pnpm (package manager)
-
----
-
-## 🧱 Clean Architecture
-
-### Layered Architecture (CMS App)
-
-```
-apps/cms/src/
-├── domain/                       # 🔵 Domain Layer (Business Logic)
-│   ├── entities/                 # Domain entities (pure models)
-│   │   ├── user.entity.ts
-│   │   └── student.entity.ts
-│   └── repositories/             # Repository interfaces
-│       ├── user.repository.interface.ts
-│       └── student.repository.interface.ts
-│
-├── infrastructure/               # 🟢 Infrastructure Layer (External)
-│   └── database/
-│       └── repositories/         # Repository implementations
-│           ├── user.repository.ts
-│           └── student.repository.ts
-│
-├── application/                  # 🟡 Application Layer (Use Cases)
-│   └── use-cases/
-│       ├── user/
-│       │   ├── get-all-users.use-case.ts
-│       │   ├── create-user.use-case.ts
-│       │   ├── update-user.use-case.ts
-│       │   ├── delete-user.use-case.ts
-│       │   └── toggle-user-active.use-case.ts
-│       └── student/
-│           ├── get-all-students.use-case.ts
-│           └── ...
-│
-└── app/                          # 🔴 Presentation Layer (UI)
-    ├── dashboard/
-    │   ├── users/
-    │   │   ├── page.tsx          # Server Component
-    │   │   ├── actions.ts        # Server Actions
-    │   │   └── _components/
-    │   │       ├── users-table.tsx    # Client Component
-    │   │       └── user-dialog.tsx    # Form Dialog
-    │   └── students/
-    │       └── ...
-    └── api/                      # API Routes
-        └── parents/
-            └── route.ts
-```
-
-### Layer Responsibilities
-
-#### 1. **Domain Layer** (Core Business Logic)
-
-- **Entities**: Pure business models (POJO)
-
-  ```typescript
-  export interface UserEntity {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-    phone: string | null;
-    isActive: boolean;
-    lastLoginAt: Date | null;
-    createdAt: Date;
-  }
-  ```
-
-- **Repository Interfaces**: Data access contracts
-  ```typescript
-  export interface IUserRepository {
-    findAll(): Promise<UserEntity[]>;
-    findById(id: string): Promise<UserEntity | null>;
-    create(data: CreateUserDTO): Promise<UserEntity>;
-    update(id: string, data: UpdateUserDTO): Promise<UserEntity>;
-    delete(id: string): Promise<void>;
-  }
-  ```
-
-#### 2. **Infrastructure Layer** (Framework & External Services)
-
-- **Repository Implementations**: Prisma database access
-
-  ```typescript
-  export class UserRepository implements IUserRepository {
-    async findAll(): Promise<UserEntity[]> {
-      return prisma.user.findMany(...);
-    }
-
-    async create(data: CreateUserDTO): Promise<UserEntity> {
-      const hashedPassword = await bcrypt.hash(data.password, 10);
-      return prisma.user.create({
-        data: { ...data, passwordHash: hashedPassword }
-      });
-    }
-  }
-  ```
-
-#### 3. **Application Layer** (Use Cases / Business Workflows)
-
-- **Use Cases**: Single responsibility business operations
-
-  ```typescript
-  export class GetAllUsersUseCase {
-    constructor(private userRepository: IUserRepository) {}
-
-    async execute(): Promise<UserEntity[]> {
-      return this.userRepository.findAll();
-    }
-  }
-
-  // Singleton export
-  export const getAllUsersUseCase = new GetAllUsersUseCase(userRepository);
-  ```
-
-#### 4. **Presentation Layer** (UI Components & API)
-
-- **Server Components**: Data fetching
-
-  ```typescript
-  // page.tsx - Server Component
-  export default async function UsersPage() {
-    const users = await getAllUsersUseCase.execute();
-    return <UsersTable data={users} />;
-  }
-  ```
-
-- **Client Components**: Interactivity
-
-  ```typescript
-  // users-table.tsx - Client Component
-  "use client";
-  export function UsersTable({ data }) {
-    const [users, setUsers] = useState(data);
-    // Filter, sort, pagination logic
-  }
-  ```
-
-- **Server Actions**: Mutations
-  ```typescript
-  // actions.ts
-  "use server";
-  export async function createUserAction(data: CreateUserDTO) {
-    try {
-      const user = await createUserUseCase.execute(data);
-      revalidatePath("/dashboard/users");
-      return { success: true, data: user };
-    } catch (error) {
-      return { success: false, error: parseDbError(error) };
-    }
-  }
-  ```
-
-### Dependency Flow
-
-````
-┌─────────────────────┐
-│  Presentation       │  (UI, Controllers, API Routes)
-│  ────────────────   │
-│  - React Components │
-│  - Server Actions   │
-│  - API Handlers     │
-└──────────┬──────────┘
-           │ depends on
-           ▼
-┌─────────────────────┐
-│  Application        │  (Use Cases, Business Workflows)
-│  ────────────────   │
-│  - CreateUser       │
-│  - GetAllUsers      │
-│  - UpdateUser       │
-└──────────┬──────────┘
-           │ depends on
-           ▼
-┌─────────────────────┐
-│  Domain             │  (Business Logic, Entities)
-│  ────────────────   │
-│  - UserEntity       │
-│  - IUserRepository  │
-│  - Business Rules   │
-└──────────┬──────────┘
-           │ implemented by
-           ▼
-┌─────────────────────┐
-│  Infrastructure     │  (Framework, Database, External APIs)
-│  ────────────────   │
-│  - UserRepository   │
-│  - Prisma Client    │
-│  - bcrypt, etc.     │
-└─────────────────────┘
-```
-
-**Nguyên tắc quan trọng:**
-- ❌ Domain không phụ thuộc vào Infrastructure
-- ❌ Domain không phụ thuộc vào Framework (Next.js, Prisma)
-- ✅ Infrastructure implements Domain interfaces
-- ✅ Dễ dàng thay đổi database/framework mà không ảnh hưởng business logic
-
----
-
-## 🔄 Quy Trình Phát Triển Feature
-
-### **Workflow: Thêm Feature Mới (Ví dụ: Product Management)**
-
-#### **Bước 1: Domain Layer**
 ```typescript
-// 1.1. Tạo Entity
-// apps/cms/src/domain/entities/product.entity.ts
-export interface ProductEntity {
-  id: string;
+// Middleware (Edge Runtime - use jose)
+import { jwtVerify } from "jose";
+
+export async function middleware(request: NextRequest) {
+  const token = request.cookies.get("token")?.value;
+  if (!token) return NextResponse.redirect(new URL("/login", request.url));
+
+  try {
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    await jwtVerify(token, secret); // ✅ Edge Runtime compatible
+    return NextResponse.next();
+  } catch (error) {
+    const response = NextResponse.redirect(new URL("/login", request.url));
+    response.cookies.delete("token");
+    return response;
+  }
+}
+
+// Server Actions (Node.js runtime - use jsonwebtoken)
+import jwt from "jsonwebtoken";
+
+export async function getAuthUser(): Promise<AuthUser | null> {
+  const token = cookies().get("token")?.value;
+  if (!token) return null;
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET!); // ✅ Node.js runtime
+  return { id: decoded.sub, email: decoded.email, role: decoded.role };
+}
+
+// Protect Server Action with role
+export const deleteUserAction = withRole(
+  ["ADMIN"], // Only ADMIN can delete
+  async (authUser, id: number) => {
+    await deleteUserUseCase.execute(id);
+    revalidatePath("/dashboard/users");
+    return { success: true };
+  },
+);
+```
+
+## Critical Database Changes (March 2026)
+
+**ID Migration: CUID String → Auto-increment Integer**
+
+- All 14 models changed from `id String @id @default(cuid())` to `id Int @id @default(autoincrement())`
+- All TypeScript entities: `id: string` → `id: number`
+- All foreign keys: String → Int (`parentId: number`, `userId: number`, etc.)
+- Database fully seeded: 53 users, 120 students, 10 schools, 32 products
+
+**Phone Number Formatting:**
+
+- Vietnamese phones: +84 → 0 format (e.g., +84910000001 → 0910000001)
+- Utility: `lib/utils.ts → formatPhoneNumber()`
+
+**Schools from Database:**
+
+- SCHOOLS constant removed, now fetched via `app/actions/get-schools.action.ts`
+- `SchoolSelectEntity { id: number; name: string; }`
+
+## Seed Data (Test Accounts)
+
+```typescript
+// Credentials
+Admin:   admin@smartcanteen.com / Admin@123    (ID: 1)
+Manager: manager@smartcanteen.com / Admin@123  (ID: 2)
+Staff:   staff@smartcanteen.com / Staff@123    (ID: 3)
+Parents: parent1-50@example.com / Parent@123   (IDs: 4-53)
+
+// Data Volume
+Users: 53 (3 staff + 50 parents)
+Students: 120 (distributed across 10 schools, grades 6A-12D)
+Schools: 10 (6 THCS middle schools + 4 THPT high schools)
+Products: 32 (8 breakfast, 9 lunch, 7 snacks, 8 drinks)
+Categories: 4 | Suppliers: 3 | Wallets: 50
+```
+
+## Clean Architecture (apps/cms/src/)
+
+```
+domain/                    # Business logic (framework-agnostic)
+├── entities/              # Pure models: user.entity.ts, student.entity.ts
+│   └── *.entity.ts        # { id: number; ... } - ALWAYS use number for IDs
+└── repositories/          # Interfaces: *.repository.interface.ts
+    └── *.interface.ts     # findById(id: number), update(id: number, data)
+
+infrastructure/            # External implementations
+└── database/repositories/ # Prisma implementations
+    └── *.repository.ts    # implements IRepository, uses PrismaClient
+
+application/               # Business workflows
+└── use-cases/            # Single-responsibility operations
+    └── */                # get-all, create, update, delete, toggle-active
+
+app/                      # Presentation layer
+├── dashboard/*/          # Feature modules (users, students, products)
+│   ├── page.tsx          # Server Component (data fetching)
+│   ├── actions.ts        # Server Actions ("use server")
+│   └── _components/      # Client Components (tables, dialogs, forms)
+└── actions/              # Global actions (get-parents, get-schools)
+```
+
+**Dependency Rule:** Domain → Application → Infrastructure ← Presentation
+
+## Key Conventions
+
+**Routing Pattern:**
+
+- List: `/dashboard/users` → `page.tsx` (Server Component)
+- Actions: `actions.ts` with revalidatePath() after mutations
+- Components: `_components/` folder (users-table.tsx, user-dialog.tsx)
+
+**Type Definitions:**
+
+- Entities: `*.entity.ts` (UserEntity, StudentEntity)
+- DTOs: `Create*DTO`, `Update*DTO` in repository interfaces
+- Always use `id: number` (not string) after March 2026 migration
+
+**Data Flow:**
+
+1. Server Component → Use Case → Repository → Prisma
+2. Client Component → Server Action → Use Case → Repository → Prisma
+3. API Route → Use Case → Repository → Prisma
+
+**Validation:**
+
+- Frontend: React Hook Form + Zod (lib/validations/\*.schema.ts)
+- Backend: NestJS class-validator DTOs
+- Student cardNumber: uppercase + numbers only, school from DB dropdown
+
+**Error Handling:**
+
+- Repositories: throw errors (P2002, P2025, etc.)
+- Actions: try-catch, return `{ success, data?, error? }`
+- UI: Toast notifications (sonner)
+
+## Prisma Commands
+
+```bash
+# Generate client (after schema changes)
+cd packages/prisma && pnpm exec prisma generate
+
+# Push schema to DB (dev only)
+export DATABASE_URL="postgresql://admin:secure_password@localhost:5432/smart_canteen"
+pnpm exec prisma db push
+
+# Seed database
+pnpm exec tsx packages/prisma/prisma/seed.ts
+
+# Reset DB (CAUTION: deletes all data)
+pnpm exec prisma migrate reset --force
+```
+
+## Important Files
+
+**Schema:** `packages/prisma/schema.prisma` (source of truth)  
+**Seed:** `packages/prisma/prisma/seed.ts` (import from "@prisma/client")  
+**DB URL:** `DATABASE_URL="postgresql://admin:secure_password@localhost:5432/smart_canteen"`  
+**Auth:** `apps/cms/src/app/api/auth/[...nextauth]/auth.config.ts`
+
+## Feature Development Workflow
+
+1. **Prisma Schema:** Add model in `packages/prisma/schema.prisma`
+2. **Generate:** `pnpm exec prisma generate && pnpm exec prisma db push`
+3. **Domain:** Create entity + repository interface (id: number)
+4. **Infrastructure:** Implement repository with Prisma
+5. **Application:** Create use cases (get-all, create, update, delete, toggle-active)
+6. **Presentation:** Server Component (page.tsx) + Client Components + Server Actions
+7. **Instance:** Singleton repository instance in `infrastructure/database/repositories/instances/`
+
+## Common Pitfalls
+
+- ❌ Using `id: string` instead of `id: number` (outdated after March 2026)
+- ❌ Importing from `"../generated/client"` instead of `"@prisma/client"`
+- ❌ Forgetting `revalidatePath()` after mutations in Server Actions
+- ❌ Not handling Prisma errors (P2002 unique constraint, P2025 not found)
+- ❌ Using CUID in new features (use auto-increment integers)
+- ❌ Hardcoding SCHOOLS constant (fetch from database via get-schools.action.ts)
+- ❌ **SECURITY:** Not protecting Server Actions with `withAuth()` or `withRole()`
+- ❌ **SECURITY:** Trusting localStorage for authorization (use JWT token from cookies)
+- ❌ **SECURITY:** Not verifying JWT token before database operations
+
+## Database Models (14 tables, all with Int IDs)
+
+User, Session, Student, Wallet, Transaction, TopUpRequest, Category, Supplier, Product, Order, OrderItem, Notification, Voucher, School
+
+**Relationships:**
+
+- Student.parentId → User.id (Int)
+- Product.categoryId → Category.id (Int)
+- Order.userId → User.id (Int), Order.studentId → Student.id (Int | null)
+- All use soft delete: `deletedAt: DateTime?`
+
+## Code Examples
+
+### Entity (Domain Layer)
+
+```typescript
+// apps/cms/src/domain/entities/user.entity.ts
+export interface UserEntity {
+  id: number; // ✅ Always number after March 2026
+  email: string;
   name: string;
-  slug: string;
-  price: number;
-  stock: number;
-  categoryId: string;
-  category?: CategoryEntity;
+  role: string;
+  phone: string | null;
   isActive: boolean;
+  lastLoginAt: Date | null;
   createdAt: Date;
 }
+```
 
-// 1.2. Tạo Repository Interface
-// apps/cms/src/domain/repositories/product.repository.interface.ts
-export interface IProductRepository {
-  findAll(): Promise<ProductEntity[]>;
-  findById(id: string): Promise<ProductEntity | null>;
-  create(data: CreateProductDTO): Promise<ProductEntity>;
-  update(id: string, data: UpdateProductDTO): Promise<ProductEntity>;
-  delete(id: string): Promise<void>;
+### Repository Interface (Domain Layer)
+
+```typescript
+// apps/cms/src/domain/repositories/user.repository.interface.ts
+export interface IUserRepository {
+  findAll(): Promise<UserEntity[]>;
+  findById(id: number): Promise<UserEntity | null>; // ✅ id: number
+  create(data: CreateUserDTO): Promise<UserEntity>;
+  update(id: number, data: UpdateUserDTO): Promise<UserEntity>; // ✅ id: number
+  delete(id: number): Promise<void>; // ✅ id: number
 }
 
-export interface CreateProductDTO {
+export interface CreateUserDTO {
+  email: string;
   name: string;
-  slug: string;
-  price: number;
-  stock: number;
-  categoryId: string;
+  role: string;
+  phone?: string;
+  password: string;
 }
 
-export interface UpdateProductDTO {
+export interface UpdateUserDTO {
   name?: string;
-  price?: number;
-  stock?: number;
+  phone?: string;
+  role?: string;
   isActive?: boolean;
 }
 ```
 
-#### **Bước 2: Infrastructure Layer**
+### Repository Implementation (Infrastructure Layer)
+
 ```typescript
-// 2. Implement Repository
-// apps/cms/src/infrastructure/database/repositories/product.repository.ts
-import { PrismaClient } from "@prisma/client";
-import { IProductRepository, CreateProductDTO } from "@/domain/repositories/product.repository.interface";
-import { ProductEntity } from "@/domain/entities/product.entity";
+// apps/cms/src/infrastructure/database/repositories/user.repository.ts
+import { PrismaClient } from "@prisma/client"; // ✅ Use @prisma/client
+import {
+  IUserRepository,
+  CreateUserDTO,
+} from "@/domain/repositories/user.repository.interface";
+import { UserEntity } from "@/domain/entities/user.entity";
+import * as bcrypt from "bcrypt";
 
 const prisma = new PrismaClient();
 
-export class ProductRepository implements IProductRepository {
-  async findAll(): Promise<ProductEntity[]> {
-    return await prisma.product.findMany({
+export class UserRepository implements IUserRepository {
+  async findAll(): Promise<UserEntity[]> {
+    const users = await prisma.user.findMany({
       where: { deletedAt: null },
-      include: { category: true },
       orderBy: { createdAt: "desc" },
     });
+
+    return users.map((user) => ({
+      id: user.id, // Prisma returns number
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      phone: user.phone,
+      isActive: user.isActive,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
+    }));
   }
 
-  async findById(id: string): Promise<ProductEntity | null> {
-    return await prisma.product.findUnique({
+  async findById(id: number): Promise<UserEntity | null> {
+    // ✅ id: number
+    const user = await prisma.user.findUnique({
       where: { id, deletedAt: null },
-      include: { category: true },
     });
+
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      phone: user.phone,
+      isActive: user.isActive,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
+    };
   }
 
-  async create(data: CreateProductDTO): Promise<ProductEntity> {
-    return await prisma.product.create({
+  async create(data: CreateUserDTO): Promise<UserEntity> {
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const user = await prisma.user.create({
       data: {
-        ...data,
+        email: data.email,
+        name: data.name,
+        role: data.role as any,
+        phone: data.phone,
+        passwordHash: hashedPassword,
         isActive: true,
       },
-      include: { category: true },
     });
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      phone: user.phone,
+      isActive: user.isActive,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
+    };
   }
 
-  async update(id: string, data: UpdateProductDTO): Promise<ProductEntity> {
-    return await prisma.product.update({
+  async update(id: number, data: UpdateUserDTO): Promise<UserEntity> {
+    // ✅ id: number
+    const user = await prisma.user.update({
       where: { id },
-      data,
-      include: { category: true },
+      data: {
+        name: data.name,
+        phone: data.phone,
+        role: data.role as any,
+        isActive: data.isActive,
+        updatedAt: new Date(),
+      },
     });
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      phone: user.phone,
+      isActive: user.isActive,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
+    };
   }
 
-  async delete(id: string): Promise<void> {
-    await prisma.product.update({
+  async delete(id: number): Promise<void> {
+    // ✅ id: number
+    await prisma.user.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
   }
 }
 
-export const productRepository = new ProductRepository();
+// Singleton instance
+export const userRepository = new UserRepository();
 ```
 
-#### **Bước 3: Application Layer (Use Cases)**
+### Use Case (Application Layer)
+
 ```typescript
-// 3.1. GetAllProductsUseCase
-// apps/cms/src/application/use-cases/product/get-all-products.use-case.ts
-import { IProductRepository } from "@/domain/repositories/product.repository.interface";
-import { ProductEntity } from "@/domain/entities/product.entity";
-import { productRepository } from "@/infrastructure/database/repositories/product.repository";
+// apps/cms/src/application/use-cases/user/get-user-by-id.use-case.ts
+import { IUserRepository } from "@/domain/repositories/user.repository.interface";
+import { UserEntity } from "@/domain/entities/user.entity";
 
-export class GetAllProductsUseCase {
-  constructor(private productRepository: IProductRepository) {}
+export class GetUserByIdUseCase {
+  constructor(private userRepository: IUserRepository) {}
 
-  async execute(): Promise<ProductEntity[]> {
-    return await this.productRepository.findAll();
+  async execute(id: number): Promise<UserEntity | null> {
+    // ✅ id: number
+    return this.userRepository.findById(id);
   }
 }
 
-export const getAllProductsUseCase = new GetAllProductsUseCase(productRepository);
+// Singleton instance
+import { userRepository } from "@/infrastructure/database/repositories/user.repository";
+export const getUserByIdUseCase = new GetUserByIdUseCase(userRepository);
+```
 
-// 3.2. CreateProductUseCase
-// apps/cms/src/application/use-cases/product/create-product.use-case.ts
-import { CreateProductDTO } from "@/domain/repositories/product.repository.interface";
-import { ProductEntity } from "@/domain/entities/product.entity";
-import { productRepository } from "@/infrastructure/database/repositories/product.repository";
+### Server Action (Presentation Layer)
 
-export class CreateProductUseCase {
-  constructor(private productRepository: IProductRepository) {}
+```typescript
+// apps/cms/src/app/dashboard/users/actions.ts
+"use server";
 
-  async execute(data: CreateProductDTO): Promise<ProductEntity> {
-    // Business validation here if needed
-    if (data.price < 0) {
-      throw new Error("Price cannot be negative");
+import { revalidatePath } from "next/cache";
+import { createUserUseCase } from "@/application/use-cases/user/create-user.use-case";
+import { updateUserUseCase } from "@/application/use-cases/user/update-user.use-case";
+import { deleteUserUseCase } from "@/application/use-cases/user/delete-user.use-case";
+import {
+  CreateUserDTO,
+  UpdateUserDTO,
+} from "@/domain/repositories/user.repository.interface";
+
+export async function createUserAction(data: CreateUserDTO) {
+  try {
+    const user = await createUserUseCase.execute(data);
+    revalidatePath("/dashboard/users"); // ✅ Revalidate after mutation
+    return { success: true, data: user };
+  } catch (error: any) {
+    // Handle Prisma errors
+    if (error.code === "P2002") {
+      return { success: false, error: "Email or phone already exists" };
     }
-
-    return await this.productRepository.create(data);
+    return { success: false, error: error.message };
   }
 }
 
-export const createProductUseCase = new CreateProductUseCase(productRepository);
+export async function updateUserAction(id: number, data: UpdateUserDTO) {
+  // ✅ id: number
+  try {
+    const user = await updateUserUseCase.execute(id, data);
+    revalidatePath("/dashboard/users");
+    return { success: true, data: user };
+  } catch (error: any) {
+    if (error.code === "P2025") {
+      return { success: false, error: "User not found" };
+    }
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteUserAction(id: number) {
+  // ✅ id: number
+  try {
+    await deleteUserUseCase.execute(id);
+    revalidatePath("/dashboard/users");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
 ```
 
-#### **Bước 4: Validation Layer**
+### Server Component (Presentation Layer)
+
 ```typescript
-// 4. Create Validation Schema
-// apps/cms/src/lib/validations/product.schema.ts
-import { z } from "zod";
+// apps/cms/src/app/dashboard/users/page.tsx
+import { getAllUsersUseCase } from "@/application/use-cases/user/get-all-users.use-case";
+import { UsersTable } from "./_components/users-table";
 
-export const createProductSchema = z.object({
-  name: z.string().min(2, "Tên sản phẩm phải có ít nhất 2 ký tự"),
-  slug: z.string().min(2, "Slug là bắt buộc"),
-  price: z.number().min(0, "Giá không được âm"),
-  stock: z.number().int().min(0, "Số lượng không được âm"),
-  categoryId: z.string().min(1, "Danh mục là bắt buộc"),
-});
-
-export const updateProductSchema = z.object({
-  name: z.string().min(2).optional(),
-  price: z.number().min(0).optional(),
-  stock: z.number().int().min(0).optional(),
-  isActive: z.boolean().optional(),
-});
-
-export type CreateProductInput = z.infer<typeof createProductSchema>;
-export type UpdateProductInput = z.infer<typeof updateProductSchema>;
-```
-
-#### **Bước 5: Presentation Layer**
-```typescript
-// 5.1. Server Component (Data Fetching)
-// apps/cms/src/app/dashboard/products/page.tsx
-import { getAllProductsUseCase } from "@/application/use-cases/product/get-all-products.use-case";
-import { ProductsTable } from "./_components/products-table";
-
-export default async function ProductsPage() {
-  const products = await getAllProductsUseCase.execute();
+export default async function UsersPage() {
+  const users = await getAllUsersUseCase.execute();
 
   return (
     <div className="container mx-auto py-6">
-      <h1 className="text-3xl font-bold mb-6">Quản lý sản phẩm</h1>
-      <ProductsTable data={products} />
+      <h1 className="text-2xl font-bold mb-6">User Management</h1>
+      <UsersTable data={users} />
     </div>
   );
 }
+```
 
-// 5.2. Client Component (UI + Interactions)
-// apps/cms/src/app/dashboard/products/_components/products-table.tsx
+### Client Component (Presentation Layer)
+
+```typescript
+// apps/cms/src/app/dashboard/users/_components/users-table.tsx
 "use client";
 
 import { useState } from "react";
-import { ProductEntity } from "@/domain/entities/product.entity";
-import { Button } from "@/components/ui/button";
-import { createProductAction } from "../actions";
-import { ProductDialog } from "./product-dialog";
-
-export function ProductsTable({ data }: { data: ProductEntity[] }) {
-  const [products, setProducts] = useState(data);
-  const [dialogOpen, setDialogOpen] = useState(false);
-
-  // Filter, sort, pagination logic here...
-
-  return (
-    <>
-      <Button onClick={() => setDialogOpen(true)}>Thêm sản phẩm</Button>
-      {/* Table implementation */}
-      <ProductDialog open={dialogOpen} onOpenChange={setDialogOpen} />
-    </>
-  );
-}
-
-// 5.3. Form Dialog
-// apps/cms/src/app/dashboard/products/_components/product-dialog.tsx
-"use client";
-
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { createProductSchema, type CreateProductInput } from "@/lib/validations/product.schema";
-import { createProductAction } from "../actions";
+import { UserEntity } from "@/domain/entities/user.entity";
+import { createUserAction, updateUserAction, deleteUserAction } from "../actions";
 import { toast } from "sonner";
 
-export function ProductDialog({ open, onOpenChange }) {
-  const form = useForm<CreateProductInput>({
-    resolver: zodResolver(createProductSchema),
-  });
+export function UsersTable({ data }: { data: UserEntity[] }) {
+  const [users, setUsers] = useState(data);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const onSubmit = async (data: CreateProductInput) => {
-    const result = await createProductAction(data);
+  const handleCreate = async (formData: any) => {
+    const result = await createUserAction(formData);
+
     if (result.success) {
-      toast.success("Tạo sản phẩm thành công");
-      onOpenChange(false);
+      toast.success("User created successfully");
+      setIsDialogOpen(false);
+      // Data will refresh via revalidatePath
+    } else {
+      toast.error(result.error);
+    }
+  };
+
+  const handleUpdate = async (id: number, formData: any) => {  // ✅ id: number
+    const result = await updateUserAction(id, formData);
+
+    if (result.success) {
+      toast.success("User updated successfully");
+    } else {
+      toast.error(result.error);
+    }
+  };
+
+  const handleDelete = async (id: number) => {  // ✅ id: number
+    if (!confirm("Are you sure?")) return;
+
+    const result = await deleteUserAction(id);
+
+    if (result.success) {
+      toast.success("User deleted successfully");
     } else {
       toast.error(result.error);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-        {/* Form fields */}
-      </form>
-    </Dialog>
+    <div>
+      {/* Table implementation */}
+    </div>
   );
 }
+```
 
-// 5.4. Server Actions (Mutations)
-// apps/cms/src/app/dashboard/products/actions.ts
+## Validation Schema Example
+
+```typescript
+// apps/cms/src/lib/validations/student.schema.ts
+import { z } from "zod";
+
+export const studentSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  grade: z.string().min(1, "Grade is required"),
+  school: z.string().min(1, "School is required"),
+  cardNumber: z
+    .string()
+    .min(8, "Card number must be at least 8 characters")
+    .regex(
+      /^[A-Z0-9]+$/,
+      "Card number must contain only uppercase letters and numbers",
+    )
+    .transform((val) => val.toUpperCase()),
+  parentId: z.union([z.string(), z.number()]).transform((val) => {
+    // ✅ Handle both string (from form) and number (programmatic)
+    if (typeof val === "string") {
+      const parsed = parseInt(val);
+      if (isNaN(parsed)) throw new Error("Invalid parent ID");
+      return parsed;
+    }
+    return val;
+  }),
+});
+
+export type StudentInput = z.infer<typeof studentSchema>;
+```
+
+## Authentication & Authorization Examples (March 2026)
+
+### Protected Server Action with Role Check
+
+```typescript
+// apps/cms/src/app/dashboard/users/actions.ts
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createProductUseCase } from "@/application/use-cases/product/create-product.use-case";
-import { parseDbError } from "@/lib/utils/error-handler";
-import { CreateProductDTO } from "@/domain/repositories/product.repository.interface";
+import { withRole } from "@/lib/with-auth";
+import { deleteUserUseCase } from "@/application/use-cases/user/delete-user.use-case";
 
-export async function createProductAction(data: CreateProductDTO) {
+/**
+ * Delete user - Only ADMIN can delete
+ * ✅ JWT token verified from cookies (server-side)
+ * ✅ Role checked before DB access
+ * ❌ Cannot be bypassed by modifying localStorage
+ */
+export const deleteUserAction = withRole(
+  ["ADMIN"], // Only ADMIN allowed
+  async (authUser, id: number) => {
+    // authUser is guaranteed to be authenticated and have ADMIN role
+    try {
+      await deleteUserUseCase.execute(id);
+      revalidatePath("/dashboard/users");
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  },
+);
+```
+
+### Protected API Route
+
+```typescript
+// apps/cms/src/app/api/parents/route.ts
+import { NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth-server";
+import { getAllUsersUseCase } from "@/application/use-cases/user/get-all-users.use-case";
+
+/**
+ * GET /api/parents
+ * ✅ Requires authentication (any logged-in user)
+ * ✅ JWT verified from cookies
+ */
+export async function GET() {
   try {
-    const product = await createProductUseCase.execute(data);
-    revalidatePath("/dashboard/products");
-    return { success: true, data: product };
+    // Verify JWT token from cookies
+    const authUser = await requireAuth();
+
+    const users = await getAllUsersUseCase.execute();
+    const parents = users.filter((user) => user.role === "PARENT");
+    return NextResponse.json(parents);
   } catch (error: any) {
-    return { success: false, error: parseDbError(error) };
+    if (error.message?.startsWith("UNAUTHORIZED")) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 },
+      );
+    }
+    return NextResponse.json(
+      { error: "Failed to fetch parents" },
+      { status: 500 },
+    );
   }
 }
 ```
 
-### **Checklist Khi Thêm Feature Mới**
+### Middleware with JWT Verification
 
-- [ ] **Domain Layer**
-  - [ ] Tạo Entity interface
-  - [ ] Tạo Repository interface
-  - [ ] Định nghĩa DTOs (CreateDTO, UpdateDTO)
+```typescript
+// apps/cms/src/middleware.ts
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import jwt from "jsonwebtoken";
 
-- [ ] **Infrastructure Layer**
-  - [ ] Implement Repository với Prisma
-  - [ ] Export singleton instance
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key";
 
-- [ ] **Application Layer**
-  - [ ] Tạo các Use Cases (get-all, create, update, delete)
-  - [ ] Export singleton instances
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
 
-- [ ] **Validation**
-  - [ ] Tạo Zod schemas (create & update)
-  - [ ] Export types từ schemas
+  // Public paths
+  if (pathname === "/login") return NextResponse.next();
 
-- [ ] **Presentation Layer**
-  - [ ] Tạo Server Component (page.tsx)
-  - [ ] Tạo Client Component (table, dialog)
-  - [ ] Tạo Server Actions (actions.ts)
-  - [ ] Implement filter/sort/pagination
+  // Get token from cookie
+  const token = request.cookies.get("token")?.value;
 
-- [ ] **Error Handling**
-  - [ ] Sử dụng parseDbError cho Prisma errors
-  - [ ] Toast notifications
-  - [ ] Loading states
+  if (!token) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // ✅ Verify JWT token (not just check existence)
+  try {
+    jwt.verify(token, JWT_SECRET);
+    return NextResponse.next();
+  } catch (error) {
+    // Invalid/expired token - redirect to login
+    const response = NextResponse.redirect(new URL("/login", request.url));
+    response.cookies.delete("token");
+    return response;
+  }
+}
+```
+
+### Auth Helper Usage
+
+```typescript
+// apps/cms/src/lib/auth-server.ts
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+
+export interface AuthUser {
+  id: number;
+  email: string;
+  role: "ADMIN" | "MANAGER" | "STAFF" | "PARENT";
+}
+
+/**
+ * Get authenticated user from JWT token (server-side only)
+ * ✅ SOURCE OF TRUTH for authentication
+ * ❌ DO NOT trust localStorage
+ */
+export async function getAuthUser(): Promise<AuthUser | null> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+
+  if (!token) return null;
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    return {
+      id: decoded.sub,
+      email: decoded.email,
+      role: decoded.role,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Require authentication - throw if not authenticated
+ */
+export async function requireAuth(): Promise<AuthUser> {
+  const user = await getAuthUser();
+  if (!user) throw new Error("UNAUTHORIZED: Authentication required");
+  return user;
+}
+
+/**
+ * Require specific role - throw if insufficient permission
+ */
+export async function requireRole(
+  allowedRoles: AuthUser["role"][],
+): Promise<AuthUser> {
+  const user = await requireAuth();
+  if (!allowedRoles.includes(user.role)) {
+    throw new Error(
+      `FORBIDDEN: Required ${allowedRoles.join(" or ")}, got ${user.role}`,
+    );
+  }
+  return user;
+}
+```
+
+### Security Flow Diagram
+
+```
+┌──────────────────────────────────────────────────┐
+│  1. User Login (NestJS Backend)                 │
+│     - Verify credentials                         │
+│     - Generate JWT token                         │
+│     - Return token to frontend                   │
+└──────────────┬───────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────┐
+│  2. Frontend Stores Token                        │
+│     - Cookie: token=<jwt> (for server access)    │
+│     - localStorage: user info (UI display only)  │
+└──────────────┬───────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────┐
+│  3. Request to Protected Route/Action            │
+│     - Cookie automatically sent with request     │
+└──────────────┬───────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────┐
+│  4. Middleware (middleware.ts)                   │
+│     ✅ Verify JWT token from cookie              │
+│     ✅ Check token expiration                    │
+│     ❌ Reject if invalid/expired                 │
+└──────────────┬───────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────┐
+│  5. Server Action/API Route                      │
+│     ✅ withRole() verifies JWT again             │
+│     ✅ Check user has required role              │
+│     ❌ Return 403 if insufficient permission     │
+└──────────────┬───────────────────────────────────┘
+               │
+               ▼
+┌──────────────────────────────────────────────────┐
+│  6. Database Access (Use Case → Repository)      │
+│     ✅ User authenticated & authorized           │
+│     ✅ Safe to query/modify data                 │
+└──────────────────────────────────────────────────┘
+```
+
+**Key Points:**
+
+- JWT token in cookie = SOURCE OF TRUTH (server-side, secure)
+- localStorage = UI display only (client can modify, never trust for auth)
+- Every Server Action/API Route must verify auth before DB access
+- Middleware protects routes, withRole() protects operations
 
 ---
 
-## 📁 Cấu Trúc Dự Án Chi Tiết
-
-```
-smart-canteen/
-├── apps/
-│   ├── cms/                              # CMS Admin Application
-│   │   ├── public/                       # Static assets
-│   │   ├── src/
-│   │   │   ├── app/                      # Next.js App Router
-│   │   │   │   ├── (auth)/
-│   │   │   │   │   └── login/
-│   │   │   │   │       └── page.tsx      # Login page
-│   │   │   │   ├── dashboard/
-│   │   │   │   │   ├── layout.tsx        # Dashboard layout
-│   │   │   │   │   ├── page.tsx          # Dashboard home
-│   │   │   │   │   ├── users/
-│   │   │   │   │   │   ├── page.tsx      # Server Component
-│   │   │   │   │   │   ├── actions.ts    # Server Actions
-│   │   │   │   │   │   └── _components/
-│   │   │   │   │   │       ├── users-table.tsx
-│   │   │   │   │   │       └── user-dialog.tsx
-│   │   │   │   │   ├── students/
-│   │   │   │   │   │   └── ...           # Same structure
-│   │   │   │   │   ├── products/         # TODO
-│   │   │   │   │   ├── orders/           # TODO
-│   │   │   │   │   └── settings/
-│   │   │   │   └── api/
-│   │   │   │       └── parents/
-│   │   │   │           └── route.ts      # API Route
-│   │   │   │
-│   │   │   ├── domain/                   # 🔵 DOMAIN LAYER
-│   │   │   │   ├── entities/
-│   │   │   │   │   ├── user.entity.ts
-│   │   │   │   │   ├── student.entity.ts
-│   │   │   │   │   ├── product.entity.ts
-│   │   │   │   │   └── order.entity.ts
-│   │   │   │   └── repositories/
-│   │   │   │       ├── user.repository.interface.ts
-│   │   │   │       ├── student.repository.interface.ts
-│   │   │   │       ├── product.repository.interface.ts
-│   │   │   │       └── order.repository.interface.ts
-│   │   │   │
-│   │   │   ├── infrastructure/           # 🟢 INFRASTRUCTURE LAYER
-│   │   │   │   └── database/
-│   │   │   │       └── repositories/
-│   │   │   │           ├── user.repository.ts
-│   │   │   │           ├── student.repository.ts
-│   │   │   │           ├── product.repository.ts
-│   │   │   │           └── order.repository.ts
-│   │   │   │
-│   │   │   ├── application/              # 🟡 APPLICATION LAYER
-│   │   │   │   └── use-cases/
-│   │   │   │       ├── user/
-│   │   │   │       │   ├── get-all-users.use-case.ts
-│   │   │   │       │   ├── get-user-by-id.use-case.ts
-│   │   │   │       │   ├── create-user.use-case.ts
-│   │   │   │       │   ├── update-user.use-case.ts
-│   │   │   │       │   ├── delete-user.use-case.ts
-│   │   │   │       │   └── toggle-user-active.use-case.ts
-│   │   │   │       ├── student/
-│   │   │   │       │   └── ...           # Same structure
-│   │   │   │       ├── product/          # TODO
-│   │   │   │       └── order/            # TODO
-│   │   │   │
-│   │   │   ├── components/               # Shared components
-│   │   │   │   ├── dashboard/
-│   │   │   │   │   ├── shell.tsx         # Layout shell
-│   │   │   │   │   └── nav.tsx           # Navigation
-│   │   │   │   └── ui/                   # Shadcn/ui components
-│   │   │   │       ├── button.tsx
-│   │   │   │       ├── input.tsx
-│   │   │   │       ├── dialog.tsx
-│   │   │   │       ├── table.tsx
-│   │   │   │       └── ...
-│   │   │   │
-│   │   │   ├── lib/                      # Utilities
-│   │   │   │   ├── auth.ts               # NextAuth config
-│   │   │   │   ├── utils.ts              # Helper functions
-│   │   │   │   ├── validations/
-│   │   │   │   │   ├── user.schema.ts    # Zod schema
-│   │   │   │   │   └── student.schema.ts
-│   │   │   │   └── utils/
-│   │   │   │       └── error-handler.ts  # DB error parser
-│   │   │   │
-│   │   │   ├── types/                    # TypeScript types
-│   │   │   │   └── next-auth.d.ts
-│   │   │   │
-│   │   │   └── middleware.ts             # Auth middleware
-│   │   │
-│   │   ├── .env.local                    # Environment variables
-│   │   ├── next.config.js
-│   │   ├── tailwind.config.ts
-│   │   └── tsconfig.json
-│   │
-│   ├── client/                           # Client Application
-│   │   └── ...                           # Similar structure to CMS
-│   │
-│   └── api/                              # NestJS Backend
-│       ├── src/
-│       │   ├── auth/
-│       │   │   ├── auth.controller.ts
-│       │   │   ├── auth.service.ts
-│       │   │   ├── auth.module.ts
-│       │   │   ├── dto/
-│       │   │   ├── guards/
-│       │   │   └── strategies/
-│       │   ├── users/
-│       │   │   └── ...
-│       │   ├── prisma/
-│       │   │   ├── prisma.service.ts
-│       │   │   └── prisma.module.ts
-│       │   └── main.ts
-│       ├── .env
-│       └── nest-cli.json
-│
-├── packages/
-│   └── prisma/                           # Shared Prisma Package
-│       ├── generated/                    # Generated Prisma Client
-│       ├── migrations/                   # Database migrations
-│       ├── prisma/
-│       │   ├── schema.prisma             # Prisma schema
-│       │   └── seed.ts                   # Database seeder
-│       ├── index.ts                      # Export Prisma client
-│       └── package.json
-│
-├── docker-compose.yml                    # Docker services
-├── .env                                  # Root environment
-├── package.json                          # Root package.json
-├── pnpm-workspace.yaml                   # pnpm workspaces
-├── turbo.json                            # Turborepo config
-├── SETUP_COMPLETE.md                     # This file
-├── bussiness.md                          # Business requirements
-└── README.md                             # Project README
-```
-
----
-
-## 🗄️ Database Schema
-
-### **Core Models**
-
-- **CMS Admin**: http://localhost:3000
-- **Client App**: http://localhost:3001
-- **NestJS API**: http://localhost:4000
-
-### 2. Or Run Individually
-
-```bash
-# CMS Admin only
-pnpm --filter=@smart-canteen/cms dev
-
-# Client App only
-pnpm --filter=@smart-canteen/client dev
-
-# API only
-pnpm --filter=@smart-canteen/api dev
-````
-
-## 🔑 Login Credentials
-
-### CMS Admin (http://localhost:3000)
-
-```
-Admin:
-  Email: admin@smartcanteen.com
-  Password: Admin@123
-
-Manager:
-  Email: manager@smartcanteen.com
-  Password: Manager@123
-
-Staff:
-  Email: staff@smartcanteen.com
-  Password: Staff@123
-```
-
-### Client App (http://localhost:3001)
-
-```
-Parent:
-  Email: parent@example.com
-  Password: Parent@123
-  Wallet: 500,000 VND
-  Children: 2 students
-```
-
-### API Testing (http://localhost:4000/api/v1)
-
-```bash
-# Login
-curl -X POST http://localhost:4000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@smartcanteen.com","password":"Admin@123"}'
-
-# Get profile (replace TOKEN with access_token from login)
-curl http://localhost:4000/api/v1/users/me \
-  -H "Authorization: Bearer TOKEN"
-```
-
-## 📝 Database Tools
-
-```bash
-# Open Prisma Studio (Database GUI)
-pnpm db:studio
-
-# Generate Prisma Client (after schema changes)
-pnpm db:generate
-
-# Push schema changes (development)
-pnpm db:push
-
-# Reset database
-pnpm db:reset
-
-# Re-seed database
-pnpm db:seed
-```
-
-## 🗄️ Database Schema Highlights
-
-### Users & Authentication
-
-- **5 Roles**: ADMIN, MANAGER, STAFF, PARENT, STUDENT
-- NextAuth Session & VerificationToken tables
-- Soft delete support (deletedAt)
-- Last login tracking
-
-### Wallet System
-
-- **Wallet**: One per student, tracks balance
-- **Transaction**: History of all wallet operations
-- **TopUpRequest**: Manual approval workflow (PENDING/APPROVED/REJECTED)
-
-### Products
-
-- **Category**: Food categories (Breakfast, Lunch, Snacks, Drinks)
-- **Supplier**: Product suppliers
-- **Product**: Menu items with nutritional information (calories, protein, etc.)
-
-### Orders
-
-- **Order**: Customer orders with payment status
-- **OrderItem**: Individual items in an order
-
-## 🎨 UI Components (Shadcn/ui)
-
-Available in both CMS and Client apps:
-
-- ✅ Button (variants: default, destructive, outline, ghost, link)
-- ✅ Input (text, email, password)
-- ✅ Label
-- ✅ Card (with Header, Title, Description, Content, Footer)
-
-## 🔐 Authentication Flow
-
-### CMS Admin & Client App (NextAuth.js)
-
-1. User enters email + password
-2. NextAuth validates credentials against database
-3. Password verified with bcrypt
-4. JWT token created (30 days expiry)
-5. Middleware protects routes
-6. Role-based access control per page
-
-### NestJS API (Passport JWT)
-
-1. POST to /api/v1/auth/login with credentials
-2. Returns JWT access_token
-3. Include token in Authorization header
-4. JwtAuthGuard validates token
-5. RolesGuard checks user role
-6. @CurrentUser() decorator provides user data
-
-## 📂 Project Structure
-
-```
-smart-canteen/
-├── apps/
-│   ├── cms/                      # Admin CMS (Next.js)
-│   │   ├── src/
-│   │   │   ├── app/              # App Router pages
-│   │   │   ├── components/       # React components
-│   │   │   ├── lib/              # Utilities (auth, utils)
-│   │   │   └── middleware.ts     # Auth middleware
-│   │   └── .env.local
-│   │
-│   ├── client/                   # Client App (Next.js)
-│   │   ├── src/                  # Same structure as CMS
-│   │   └── .env.local
-│   │
-│   └── api/                      # Backend API (NestJS)
-│       ├── src/
-│       │   ├── auth/             # Auth module
-│       │   ├── users/            # Users module
-│       │   ├── prisma/           # Prisma service
-│       │   └── main.ts
-│       └── .env
-│
-├── packages/
-│   └── prisma/                   # Shared Prisma schema
-│       ├── schema.prisma         # Database schema
-│       ├── prisma/seed.ts        # Seeder
-│       └── index.ts              # Prisma client export
-│
-├── docker-compose.yml            # PostgreSQL + Redis
-├── .env                          # Root environment variables
-└── README.md                     # Full documentation
-```
-
-## 🎯 Next Steps
-
-Đã hoàn thành **Step 1: Base Project + Authentication/Authorization**!
-
-Các bước tiếp theo có thể phát triển:
-
-1. **Product Management**
-   - CRUD operations for products
-   - Image upload functionality
-   - Category management
-
-2. **Order System**
-   - Shopping cart
-   - Order placement
-   - Order status tracking
-   - Payment processing
-
-3. **Wallet & Top-up**
-   - Top-up request UI
-   - Admin approval workflow
-   - Transaction history UI
-
-4. **Notifications**
-   - Real-time notifications (Socket.io)
-   - Push notifications
-   - Email/SMS notifications
-
-5. **Reports & Analytics**
-   - Sales reports
-   - Popular products
-   - User activity
-   - Revenue analytics
-
-6. **Advanced Features**
-   - QR code scanning
-   - PWA support for mobile
-   - Multi-school support
-   - Voucher/discount system
-
-## 📚 Documentation
-
-- [Full README](README.md) - Complete project documentation
-- [Business Requirements](bussiness.md) - System architecture
-- [Prisma Schema](packages/prisma/schema.prisma) - Database models
-
-## 🐛 Troubleshooting
-
-### Docker not running
-
-```bash
-docker-compose up -d
-```
-
-### Database connection error
-
-```bash
-# Check Docker containers are running
-docker ps
-
-# Restart containers
-docker-compose restart
-```
-
-### Prisma Client not generated
-
-```bash
-cd packages/prisma
-pnpm prisma generate
-```
-
-### Port already in use
-
-```bash
-# Change ports in .env files
-# CMS: NEXTAUTH_URL=http://localhost:PORT
-# Client: NEXTAUTH_URL=http://localhost:PORT
-# API: PORT=YOUR_PORT in apps/api/.env
-```
-
----
-
-**🎉 Congratulations! Your Smart Canteen system is ready for development!**
-
-Happy coding! 🚀
+**Need more details?** Check SETUP_COMPLETE.backup.md (full 1000-line documentation)

@@ -1,9 +1,9 @@
-import { IDashboardRepository } from "../../domain/repositories/dashboard.repository.interface";
-import { DashboardStatsEntity } from "../../domain/entities/dashboard-stats.entity";
 import { userRepository } from "./user.repository";
 import { studentRepository } from "./student.repository";
 import { orderRepository } from "./order.repository";
 import { productRepository } from "./product.repository";
+import { IDashboardRepository } from "@/domain/repositories/dashboard.repository.interface";
+import { DashboardStatsEntity } from "@/domain/entities/dashboard-stats.entity";
 
 export class PrismaDashboardRepository implements IDashboardRepository {
   async getStats(): Promise<DashboardStatsEntity> {

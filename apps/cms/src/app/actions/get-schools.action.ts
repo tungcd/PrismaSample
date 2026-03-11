@@ -6,7 +6,7 @@ import { prisma } from "@/infrastructure/database/prisma-client";
  * School entity for select box
  */
 export interface SchoolSelectEntity {
-  id: string;
+  id: number;
   name: string;
 }
 
@@ -39,7 +39,7 @@ export async function getAllSchools(): Promise<SchoolSelectEntity[]> {
  * Fetch single school by ID
  */
 export async function getSchoolById(
-  id: string,
+  id: number,
 ): Promise<SchoolSelectEntity | null> {
   try {
     const school = await prisma.school.findFirst({

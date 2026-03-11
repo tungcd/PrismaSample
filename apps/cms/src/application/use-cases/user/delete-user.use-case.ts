@@ -1,7 +1,7 @@
 import { userRepository } from "@/infrastructure/database/repositories/user.repository";
 
 export class DeleteUserUseCase {
-  async execute(id: string): Promise<void> {
+  async execute(id: number): Promise<void> {
     return userRepository.delete(id);
   }
 }

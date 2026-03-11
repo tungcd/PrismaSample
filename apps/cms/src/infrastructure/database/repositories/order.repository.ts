@@ -40,7 +40,7 @@ export class PrismaOrderRepository implements IOrderRepository {
     }));
   }
 
-  async findById(id: string): Promise<OrderEntity | null> {
+  async findById(id: number): Promise<OrderEntity | null> {
     const order = await prisma.order.findUnique({
       where: { id, deletedAt: null },
       include: {

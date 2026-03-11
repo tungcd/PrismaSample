@@ -21,7 +21,7 @@ export async function createStudentAction(data: CreateStudentDTO) {
   }
 }
 
-export async function updateStudentAction(id: string, data: UpdateStudentDTO) {
+export async function updateStudentAction(id: number, data: UpdateStudentDTO) {
   try {
     const student = await updateStudentUseCase.execute(id, data);
     revalidatePath("/dashboard/students");
@@ -31,7 +31,7 @@ export async function updateStudentAction(id: string, data: UpdateStudentDTO) {
   }
 }
 
-export async function deleteStudentAction(id: string) {
+export async function deleteStudentAction(id: number) {
   try {
     await deleteStudentUseCase.execute(id);
     revalidatePath("/dashboard/students");
@@ -41,7 +41,7 @@ export async function deleteStudentAction(id: string) {
   }
 }
 
-export async function toggleStudentActiveAction(id: string) {
+export async function toggleStudentActiveAction(id: number) {
   try {
     const student = await toggleStudentActiveUseCase.execute(id);
     revalidatePath("/dashboard/students");

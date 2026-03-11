@@ -81,7 +81,7 @@ export class PrismaStudentRepository implements IStudentRepository {
     return students;
   }
 
-  async findById(id: string): Promise<StudentEntity | null> {
+  async findById(id: number): Promise<StudentEntity | null> {
     const student = await prisma.student.findUnique({
       where: { id, deletedAt: null },
       include: {
@@ -128,7 +128,7 @@ export class PrismaStudentRepository implements IStudentRepository {
     return student;
   }
 
-  async update(id: string, data: UpdateStudentDTO): Promise<StudentEntity> {
+  async update(id: number, data: UpdateStudentDTO): Promise<StudentEntity> {
     const student = await prisma.student.update({
       where: { id },
       data: {
@@ -152,14 +152,14 @@ export class PrismaStudentRepository implements IStudentRepository {
     return student;
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: number): Promise<void> {
     await prisma.student.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
   }
 
-  async toggleActive(id: string): Promise<StudentEntity> {
+  async toggleActive(id: number): Promise<StudentEntity> {
     const student = await prisma.student.findUnique({
       where: { id },
       select: { isActive: true },

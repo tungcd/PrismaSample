@@ -2,7 +2,7 @@ import { studentRepository } from "@/infrastructure/database/repositories/studen
 import { StudentEntity } from "@/domain/entities/student.entity";
 
 export class ToggleStudentActiveUseCase {
-  async execute(id: string): Promise<StudentEntity> {
+  async execute(id: number): Promise<StudentEntity> {
     return studentRepository.toggleActive(id);
   }
 }

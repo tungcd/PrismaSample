@@ -2,7 +2,7 @@ import { studentRepository } from "@/infrastructure/database/repositories/studen
 import { StudentEntity } from "@/domain/entities/student.entity";
 
 export class GetStudentByIdUseCase {
-  async execute(id: string): Promise<StudentEntity | null> {
+  async execute(id: number): Promise<StudentEntity | null> {
     return studentRepository.findById(id);
   }
 }

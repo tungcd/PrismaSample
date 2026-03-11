@@ -95,7 +95,7 @@ export class PrismaUserRepository implements IUserRepository {
     }));
   }
 
-  async findById(id: string): Promise<UserEntity | null> {
+  async findById(id: number): Promise<UserEntity | null> {
     const user = await prisma.user.findUnique({
       where: { id, deletedAt: null },
       select: {
@@ -156,7 +156,7 @@ export class PrismaUserRepository implements IUserRepository {
     };
   }
 
-  async update(id: string, data: UpdateUserDTO): Promise<UserEntity> {
+  async update(id: number, data: UpdateUserDTO): Promise<UserEntity> {
     const updateData: any = {
       name: data.name,
       role: data.role,
@@ -190,14 +190,14 @@ export class PrismaUserRepository implements IUserRepository {
     };
   }
 
-  async delete(id: string): Promise<void> {
+  async delete(id: number): Promise<void> {
     await prisma.user.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
   }
 
-  async toggleActive(id: string): Promise<UserEntity> {
+  async toggleActive(id: number): Promise<UserEntity> {
     const user = await prisma.user.findUnique({
       where: { id },
       select: { isActive: true },

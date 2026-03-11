@@ -1,14 +1,14 @@
 export interface StudentEntity {
-  id: string;
+  id: number;
   name: string;
   grade: string;
   school: string;
   cardNumber: string | null;
   isActive: boolean;
-  parentId: string;
+  parentId: number;
   createdAt: Date;
   parent?: {
-    id: string;
+    id: number;
     name: string;
     email: string;
   };

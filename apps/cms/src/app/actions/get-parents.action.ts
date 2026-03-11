@@ -11,7 +11,7 @@ import { formatPhoneNumber } from "@/lib/utils";
  * Parent entity for select box (User with role PARENT)
  */
 export interface ParentSelectEntity extends SelectableEntity {
-  id: string;
+  id: number;
   name: string;
   email: string;
   phone: string | null;
@@ -92,7 +92,7 @@ export async function getParentById(
   try {
     const user = await prisma.user.findFirst({
       where: {
-        id: id.toString(),
+        id: typeof id === "string" ? parseInt(id) : id,
         role: "PARENT",
         deletedAt: null,
       },
@@ -107,7 +107,7 @@ export async function getParentById(
     if (!user) return null;
 
     return {
-      id: user.id, // Keep as string (cuid)
+      id: user.id,
       name: user.name,
       email: user.email,
       phone: formatPhoneNumber(user.phone),

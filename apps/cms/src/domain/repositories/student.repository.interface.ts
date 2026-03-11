@@ -5,7 +5,7 @@ export interface CreateStudentDTO {
   grade: string;
   school: string;
   cardNumber: string;
-  parentId: string;
+  parentId: number;
 }
 
 export interface UpdateStudentDTO {
@@ -13,15 +13,15 @@ export interface UpdateStudentDTO {
   grade?: string;
   school?: string;
   cardNumber?: string;
-  parentId?: string;
+  parentId?: number;
 }
 
 export interface IStudentRepository {
   findAll(): Promise<StudentEntity[]>;
-  findById(id: string): Promise<StudentEntity | null>;
+  findById(id: number): Promise<StudentEntity | null>;
   count(): Promise<number>;
   create(data: CreateStudentDTO): Promise<StudentEntity>;
-  update(id: string, data: UpdateStudentDTO): Promise<StudentEntity>;
-  delete(id: string): Promise<void>;
-  toggleActive(id: string): Promise<StudentEntity>;
+  update(id: number, data: UpdateStudentDTO): Promise<StudentEntity>;
+  delete(id: number): Promise<void>;
+  toggleActive(id: number): Promise<StudentEntity>;
 }

@@ -21,7 +21,7 @@ export async function createUserAction(data: CreateUserDTO) {
   }
 }
 
-export async function updateUserAction(id: string, data: UpdateUserDTO) {
+export async function updateUserAction(id: number, data: UpdateUserDTO) {
   try {
     const user = await updateUserUseCase.execute(id, data);
     revalidatePath("/dashboard/users");
@@ -31,7 +31,7 @@ export async function updateUserAction(id: string, data: UpdateUserDTO) {
   }
 }
 
-export async function deleteUserAction(id: string) {
+export async function deleteUserAction(id: number) {
   try {
     await deleteUserUseCase.execute(id);
     revalidatePath("/dashboard/users");
@@ -41,7 +41,7 @@ export async function deleteUserAction(id: string) {
   }
 }
 
-export async function toggleUserActiveAction(id: string) {
+export async function toggleUserActiveAction(id: number) {
   try {
     const user = await toggleUserActiveUseCase.execute(id);
     revalidatePath("/dashboard/users");

@@ -2,7 +2,7 @@ import { userRepository } from "@/infrastructure/database/repositories/user.repo
 import { UserEntity } from "@/domain/entities/user.entity";
 
 export class GetUserByIdUseCase {
-  async execute(id: string): Promise<UserEntity | null> {
+  async execute(id: number): Promise<UserEntity | null> {
     return userRepository.findById(id);
   }
 }

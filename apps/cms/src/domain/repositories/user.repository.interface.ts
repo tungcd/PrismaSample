@@ -18,10 +18,10 @@ export interface UpdateUserDTO {
 
 export interface IUserRepository {
   findAll(): Promise<UserEntity[]>;
-  findById(id: string): Promise<UserEntity | null>;
+  findById(id: number): Promise<UserEntity | null>;
   count(): Promise<number>;
   create(data: CreateUserDTO): Promise<UserEntity>;
-  update(id: string, data: UpdateUserDTO): Promise<UserEntity>;
-  delete(id: string): Promise<void>;
-  toggleActive(id: string): Promise<UserEntity>;
+  update(id: number, data: UpdateUserDTO): Promise<UserEntity>;
+  delete(id: number): Promise<void>;
+  toggleActive(id: number): Promise<UserEntity>;
 }

@@ -1,20 +1,20 @@
 export interface OrderEntity {
-  id: string;
+  id: number;
   orderNumber: string;
-  userId: string;
-  studentId: string | null;
+  userId: number;
+  studentId: number | null;
   status: string;
   paymentStatus: string;
   total: number;
   paymentMethod: string;
   createdAt: Date;
   user?: {
-    id: string;
+    id: number;
     name: string;
     email: string;
   };
   student?: {
-    id: string;
+    id: number;
     name: string;
   } | null;
 }

@@ -17,10 +17,16 @@ import {
   Building2,
   Menu,
 } from "lucide-react";
-import { useState } from "react";
-import { Role } from "@prisma/client";
-
-const navigation = [
+import { useState, useEffect } from "react";
+import type { User } from "@/lib/auth-client";
+import { Role } from "../../../prisma/generated/client";
+type NavigationItem = {
+  name: string;
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  roles: Role[];
+};
+const navigation: NavigationItem[] = [
   {
     name: "Tổng quan",
     href: "/dashboard",
@@ -73,8 +79,12 @@ const navigation = [
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const user = getUser();
+  const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    setUser(getUser());
+  }, []);
 
   const userRole = user?.role as Role;
 

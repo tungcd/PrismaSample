@@ -55,14 +55,7 @@ export const schoolColumns: DataTableColumn<SchoolEntity>[] = [
     key: "isActive",
     label: "Trạng thái",
     sortable: false,
-    filterable: true,
-    filter: {
-      type: "select",
-      options: [
-        { label: "Hoạt động", value: "active" },
-        { label: "Khóa", value: "inactive" },
-      ],
-    },
+    filterable: false,
     render: (row: SchoolEntity) => (
       <span
         className={`px-2 py-1 text-xs rounded ${

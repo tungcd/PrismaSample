@@ -31,9 +31,7 @@ export function SchoolsTable({
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState<string | number | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingSchool, setEditingSchool] = useState<SchoolEntity | null>(
-    null,
-  );
+  const [editingSchool, setEditingSchool] = useState<SchoolEntity | null>(null);
 
   const handleToggleActive = async (school: SchoolEntity) => {
     setLoading(school.id);
@@ -101,7 +99,22 @@ export function SchoolsTable({
     entityName: "trường học",
     addButtonLabel: "Thêm trường học",
     onAdd: handleCreate,
-    columns: schoolColumns,
+    columns: [
+      ...schoolColumns,
+      {
+        key: "status",
+        label: "Status Filter",
+        filterable: true,
+        filter: {
+          type: "select",
+          options: [
+            { value: "active", label: "Hoạt động" },
+            { value: "inactive", label: "Khóa" },
+          ],
+        },
+        render: () => null, // Hidden column for filtering only
+      },
+    ],
     rowActions: [
       {
         label: "Chỉnh sửa",

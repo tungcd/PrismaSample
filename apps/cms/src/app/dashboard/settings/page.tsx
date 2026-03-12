@@ -2,7 +2,8 @@ import { SettingsContent } from "./_components/settings-content";
 import { getUserFromDBAction } from "./actions";
 import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
+// ISR: Cache for 300 seconds (settings rarely change)
+export const revalidate = 300;
 
 export default async function SettingsPage() {
   // Fetch user data from database (not from JWT)

@@ -58,7 +58,7 @@ export function DataTable<T extends { id: string | number }>({
 
   // Store debounce timer ref to cancel on clear
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Flag to prevent useEffect from running during clear filters
   const isClearingFiltersRef = useRef(false);
 
@@ -198,7 +198,7 @@ export function DataTable<T extends { id: string | number }>({
   const handleClearFilters = () => {
     // Set flag to prevent useEffect from triggering
     isClearingFiltersRef.current = true;
-    
+
     // Cancel any pending debounce timers first
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
@@ -232,7 +232,7 @@ export function DataTable<T extends { id: string | number }>({
       : window.location.pathname;
     router.replace(newUrl);
     router.refresh();
-    
+
     // Reset flag after a short delay to allow navigation to complete
     setTimeout(() => {
       isClearingFiltersRef.current = false;
@@ -410,15 +410,23 @@ export function DataTable<T extends { id: string | number }>({
                                     handleRowAction(action.onClick, item)
                                   }
                                   className={
-                                    action.variant === "destructive"
+                                    (typeof action.variant === "function"
+                                      ? action.variant(item)
+                                      : action.variant) === "destructive"
                                       ? "text-red-600"
                                       : ""
                                   }
                                 >
                                   {action.icon && (
-                                    <span className="mr-2">{action.icon}</span>
+                                    <span className="mr-2">
+                                      {typeof action.icon === "function"
+                                        ? action.icon(item)
+                                        : action.icon}
+                                    </span>
                                   )}
-                                  {action.label}
+                                  {typeof action.label === "function"
+                                    ? action.label(item)
+                                    : action.label}
                                 </DropdownMenuItem>
                               </div>
                             ))}

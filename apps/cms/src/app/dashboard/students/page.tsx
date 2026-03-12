@@ -16,8 +16,8 @@ interface StudentsPageProps {
   };
 }
 
-// Force dynamic rendering to prevent caching issues with pagination
-export const dynamic = "force-dynamic";
+// ISR: Revalidate every 60 seconds for fresh data while maintaining performance
+export const revalidate = 60;
 
 export default async function StudentsPage({
   searchParams,

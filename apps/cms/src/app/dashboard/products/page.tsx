@@ -2,7 +2,8 @@ import { getAllProductsAction } from "./actions";
 import { getCategoriesAction } from "./categories-actions";
 import { ProductsTable } from "./_components/products-table";
 
-export const dynamic = "force-dynamic";
+// ISR: Cache for 120 seconds (products change moderately)
+export const revalidate = 120;
 
 interface ProductsPageProps {
   searchParams: {

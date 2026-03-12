@@ -34,10 +34,13 @@ export interface DataTableColumn<T> {
 }
 
 export interface RowAction<T> {
-  label: string;
-  icon?: ReactNode;
+  label: string | ((item: T) => string);
+  icon?: ReactNode | ((item: T) => ReactNode);
   onClick: (item: T) => void | Promise<void>;
-  variant?: "default" | "destructive";
+  variant?:
+    | "default"
+    | "destructive"
+    | ((item: T) => "default" | "destructive");
   separator?: boolean; // Add separator before this action
 }
 

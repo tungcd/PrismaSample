@@ -16,7 +16,8 @@ interface UsersPageProps {
 }
 
 // Force dynamic rendering to prevent caching issues with pagination
-export const dynamic = "force-dynamic";
+// ISR: Cache for 60 seconds
+export const revalidate = 60;
 
 export default async function UsersPage({ searchParams }: UsersPageProps) {
   const params = {

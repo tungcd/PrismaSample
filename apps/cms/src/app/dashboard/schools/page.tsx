@@ -1,7 +1,8 @@
 import { getAllSchoolsAction } from "./actions";
 import { SchoolsTable } from "./_components/schools-table";
 
-export const dynamic = "force-dynamic";
+// ISR: Cache for 300 seconds (schools rarely change)
+export const revalidate = 300;
 
 interface SchoolsPageProps {
   searchParams: {

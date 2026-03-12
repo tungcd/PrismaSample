@@ -16,6 +16,10 @@ import {
   LogOut,
   Building2,
   Menu,
+  FolderKanban,
+  Truck,
+  Receipt,
+  CreditCard,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { User } from "@/lib/auth-client";
@@ -68,6 +72,30 @@ const navigation: NavigationItem[] = [
     href: "/dashboard/schools",
     icon: Building2,
     roles: [Role.ADMIN],
+  },
+  {
+    name: "Danh mục",
+    href: "/dashboard/categories",
+    icon: FolderKanban,
+    roles: [Role.ADMIN],
+  },
+  {
+    name: "Nhà cung cấp",
+    href: "/dashboard/suppliers",
+    icon: Truck,
+    roles: [Role.ADMIN],
+  },
+  {
+    name: "Giao dịch",
+    href: "/dashboard/transactions",
+    icon: Receipt,
+    roles: [Role.ADMIN, Role.MANAGER],
+  },
+  {
+    name: "Quản lý ví",
+    href: "/dashboard/wallets",
+    icon: CreditCard,
+    roles: [Role.ADMIN, Role.MANAGER],
   },
   {
     name: "Cài đặt",

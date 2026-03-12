@@ -16,7 +16,8 @@ interface OrdersPageProps {
 }
 
 // Force dynamic rendering to prevent caching issues with pagination
-export const dynamic = "force-dynamic";
+// ISR: Cache for 30 seconds (orders need near real-time updates)
+export const revalidate = 30;
 
 export default async function OrdersPage({ searchParams }: OrdersPageProps) {
   const params = {
@@ -26,7 +27,9 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     status: searchParams.status,
     paymentStatus: searchParams.paymentStatus,
     userId: searchParams.user ? parseInt(searchParams.user) : undefined,
-    studentId: searchParams.student ? parseInt(searchParams.student) : undefined,
+    studentId: searchParams.student
+      ? parseInt(searchParams.student)
+      : undefined,
     sortBy: searchParams.sortBy as any,
     sortOrder: searchParams.sortOrder as any,
   };

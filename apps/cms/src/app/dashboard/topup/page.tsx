@@ -1,7 +1,8 @@
 import { getTopUpsUseCase } from "@/application/use-cases/top-up/get-top-ups.use-case";
 import { TopUpsTable } from "./_components/top-ups-table";
 
-export const dynamic = "force-dynamic";
+// ISR: Cache for 30 seconds (financial data needs frequent updates)
+export const revalidate = 30;
 
 interface PageProps {
   searchParams: Promise<{

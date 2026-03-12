@@ -1,4 +1,4 @@
-import { PrismaTopUpRepository } from "@/infrastructure/repositories/top-up.repository";
+import { PrismaTopUpRepository } from "@/infrastructure/database/repositories/top-up.repository";
 
 export async function deleteTopUpUseCase(id: number): Promise<void> {
   const repository = new PrismaTopUpRepository();

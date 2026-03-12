@@ -1,4 +1,4 @@
-import { PrismaTopUpRepository } from "@/infrastructure/repositories/top-up.repository";
+import { PrismaTopUpRepository } from "@/infrastructure/database/repositories/top-up.repository";
 import { TopUpEntity } from "@/domain/entities/top-up.entity";
 
 export interface FindTopUpsParams {

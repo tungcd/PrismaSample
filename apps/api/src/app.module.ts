@@ -5,6 +5,10 @@ import { PrismaModule } from "./prisma/prisma.module";
 import { AuthModule } from "./auth/auth.module";
 import { UsersModule } from "./users/users.module";
 import { StudentsModule } from "./students/students.module";
+import { CategoriesModule } from "./categories/categories.module";
+import { ProductsModule } from "./products/products.module";
+import { CartModule } from "./cart/cart.module";
+import { OrdersModule } from "./orders/orders.module";
 
 @Module({
   imports: [
@@ -21,6 +25,10 @@ import { StudentsModule } from "./students/students.module";
     AuthModule,
     UsersModule,
     StudentsModule,
+    CategoriesModule,
+    ProductsModule,
+    CartModule,
+    OrdersModule,
   ],
 })
 export class AppModule {}

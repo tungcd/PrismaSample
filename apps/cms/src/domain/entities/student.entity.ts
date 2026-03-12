@@ -4,6 +4,7 @@ export interface StudentEntity {
   grade: string;
   school: string;
   cardNumber: string | null;
+  avatar: string | null;
   isActive: boolean;
   parentId: number;
   createdAt: Date;
@@ -11,5 +12,8 @@ export interface StudentEntity {
     id: number;
     name: string;
     email: string;
+    wallet?: {
+      balance: number;
+    } | null;
   };
 }

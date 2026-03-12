@@ -100,13 +100,29 @@ export function StudentsTable({ data, schools }: StudentsTableProps) {
       },
       {
         key: "name",
-        label: "Tên học sinh",
+        label: "Học sinh",
         sortable: true,
         filterable: true,
         filter: {
           type: "text",
           placeholder: "Tìm tên...",
         },
+        render: (student) => (
+          <div className="flex items-center gap-3">
+            {student.avatar ? (
+              <img
+                src={student.avatar}
+                alt={student.name}
+                className="w-10 h-10 rounded-full object-cover border"
+              />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold">
+                {student.name.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span>{student.name}</span>
+          </div>
+        ),
       },
       {
         key: "grade",
@@ -136,6 +152,24 @@ export function StudentsTable({ data, schools }: StudentsTableProps) {
         key: "parent",
         label: "Phụ huynh",
         render: (student) => student.parent?.name || "-",
+      },
+      {
+        key: "wallet",
+        label: "Số dư PH",
+        render: (student) => {
+          const balance = student.parent?.wallet?.balance;
+          if (balance === undefined || balance === null) {
+            return <span className="text-muted-foreground">-</span>;
+          }
+          return (
+            <span className="font-medium">
+              {new Intl.NumberFormat("vi-VN", {
+                style: "currency",
+                currency: "VND",
+              }).format(Number(balance))}
+            </span>
+          );
+        },
       },
       {
         key: "status",

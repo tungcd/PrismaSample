@@ -5,6 +5,7 @@ export interface CreateStudentDTO {
   grade: string;
   school: string;
   cardNumber: string;
+  avatar?: string;
   parentId: number;
 }
 
@@ -13,6 +14,7 @@ export interface UpdateStudentDTO {
   grade?: string;
   school?: string;
   cardNumber?: string;
+  avatar?: string;
   parentId?: number;
 }
 

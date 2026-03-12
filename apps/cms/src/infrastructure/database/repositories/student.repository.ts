@@ -50,6 +50,11 @@ export class PrismaStudentRepository implements IStudentRepository {
               id: true,
               name: true,
               email: true,
+              wallet: {
+                select: {
+                  balance: true,
+                },
+              },
             },
           },
         },
@@ -72,6 +77,11 @@ export class PrismaStudentRepository implements IStudentRepository {
             id: true,
             name: true,
             email: true,
+            wallet: {
+              select: {
+                balance: true,
+              },
+            },
           },
         },
       },
@@ -90,6 +100,11 @@ export class PrismaStudentRepository implements IStudentRepository {
             id: true,
             name: true,
             email: true,
+            wallet: {
+              select: {
+                balance: true,
+              },
+            },
           },
         },
       },
@@ -111,6 +126,7 @@ export class PrismaStudentRepository implements IStudentRepository {
         grade: data.grade,
         school: data.school,
         cardNumber: data.cardNumber,
+        avatar: data.avatar,
         parentId: data.parentId,
         isActive: true,
       },
@@ -120,6 +136,11 @@ export class PrismaStudentRepository implements IStudentRepository {
             id: true,
             name: true,
             email: true,
+            wallet: {
+              select: {
+                balance: true,
+              },
+            },
           },
         },
       },
@@ -136,6 +157,7 @@ export class PrismaStudentRepository implements IStudentRepository {
         grade: data.grade,
         school: data.school,
         cardNumber: data.cardNumber,
+        avatar: data.avatar,
         parentId: data.parentId,
       },
       include: {
@@ -144,6 +166,11 @@ export class PrismaStudentRepository implements IStudentRepository {
             id: true,
             name: true,
             email: true,
+            wallet: {
+              select: {
+                balance: true,
+              },
+            },
           },
         },
       },
@@ -176,6 +203,11 @@ export class PrismaStudentRepository implements IStudentRepository {
             id: true,
             name: true,
             email: true,
+            wallet: {
+              select: {
+                balance: true,
+              },
+            },
           },
         },
       },

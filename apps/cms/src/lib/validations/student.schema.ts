@@ -18,6 +18,7 @@ export const studentSchema = z.object({
     .min(4, "Số thẻ phải có ít nhất 4 ký tự")
     .max(20, "Số thẻ không được quá 20 ký tự")
     .regex(/^[A-Z0-9]+$/, "Số thẻ chỉ được chứa chữ in hoa và số"),
+  avatar: z.string().optional(),
   parentId: z.union([z.string(), z.number()]).transform((val) => {
     if (typeof val === "string") {
       const parsed = parseInt(val);

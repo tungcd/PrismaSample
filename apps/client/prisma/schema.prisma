@@ -91,6 +91,7 @@ model Student {
   grade      String
   school     String
   cardNumber String?  @unique
+  avatar     String?  // Base64 encoded image
   isActive   Boolean  @default(true)
   parentId   String
   

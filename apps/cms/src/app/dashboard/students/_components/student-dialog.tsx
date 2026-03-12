@@ -87,6 +87,7 @@ export function StudentDialog({
 }: StudentDialogProps) {
   const [loading, setLoading] = useState(false);
   const [schools, setSchools] = useState<SchoolSelectEntity[]>([]);
+  const [uploadError, setUploadError] = useState<string>("");
 
   const form = useForm<StudentInput>({
     resolver: zodResolver(studentSchema),
@@ -95,7 +96,8 @@ export function StudentDialog({
       grade: "",
       school: "",
       cardNumber: "",
-      parentId: "",
+      avatar: "",
+      parentId: 0,
     },
   });
 
@@ -113,6 +115,7 @@ export function StudentDialog({
         grade: student.grade,
         school: student.school,
         cardNumber: student.cardNumber || "",
+        avatar: student.avatar || "",
         parentId: student.parentId,
       });
     } else {
@@ -121,10 +124,48 @@ export function StudentDialog({
         grade: "",
         school: "",
         cardNumber: "",
-        parentId: "",
+        avatar: "",
+        parentId: 0,
       });
     }
   }, [student, open, form]);
+
+  const handleAvatarUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadError("");
+
+    // Validate file type
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      setUploadError("Chỉ chấp nhận file JPG hoặc PNG");
+      return;
+    }
+
+    // Validate file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError("Kích thước file phải < 2MB");
+      return;
+    }
+
+    // Convert to base64
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      form.setValue("avatar", base64);
+    };
+    reader.onerror = () => {
+      setUploadError("Không thể đọc file");
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveAvatar = () => {
+    form.setValue("avatar", "");
+    setUploadError("");
+  };
 
   const onSubmit = async (data: StudentInput) => {
     setLoading(true);
@@ -255,6 +296,36 @@ export function StudentDialog({
             </div>
 
             <div className="grid gap-2">
+              <Label htmlFor="avatar">Ảnh đại diện</Label>
+              <Input
+                id="avatar"
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={handleAvatarUpload}
+                className="cursor-pointer"
+              />
+              {uploadError && (
+                <p className="text-sm text-red-500">{uploadError}</p>
+              )}
+              {form.watch("avatar") && (
+                <div className="mt-2 relative group w-32 h-32">
+                  <img
+                    src={form.watch("avatar")}
+                    alt="Avatar preview"
+                    className="w-full h-full object-cover rounded-lg border"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleRemoveAvatar}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    ×
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="grid gap-2">
               <Label htmlFor="parentId">
                 Phụ huynh <span className="text-red-500">*</span>
               </Label>
@@ -262,7 +333,9 @@ export function StudentDialog({
                 fetchFn={getParentsForSelect}
                 fetchByIdFn={getParentById}
                 value={form.watch("parentId")}
-                onChange={(value) => form.setValue("parentId", value as string)}
+                onChange={(value) =>
+                  form.setValue("parentId", Number(value) || 0)
+                }
                 placeholder="Chọn phụ huynh"
                 searchPlaceholder="Tìm theo tên, email, số điện thoại..."
                 renderOption={(parent) => (

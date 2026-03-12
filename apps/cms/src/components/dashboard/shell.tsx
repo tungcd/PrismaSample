@@ -22,6 +22,7 @@ import {
   CreditCard,
   Ticket,
   Warehouse,
+  BarChart3,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { User } from "@/lib/auth-client";
@@ -109,6 +110,12 @@ const navigation: NavigationItem[] = [
     name: "Quản lý kho",
     href: "/dashboard/inventory",
     icon: Warehouse,
+    roles: [Role.ADMIN, Role.MANAGER],
+  },
+  {
+    name: "Báo cáo",
+    href: "/dashboard/reports",
+    icon: BarChart3,
     roles: [Role.ADMIN, Role.MANAGER],
   },
   {

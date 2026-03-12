@@ -45,10 +45,7 @@ export class PrismaReportRepository implements IReportRepository {
     // Group by date
     const grouped = this.groupByPeriod(orders, period);
 
-    const totalRevenue = orders.reduce(
-      (sum, o) => sum + Number(o.total),
-      0,
-    );
+    const totalRevenue = orders.reduce((sum, o) => sum + Number(o.total), 0);
     const totalOrders = orders.length;
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
@@ -64,12 +61,7 @@ export class PrismaReportRepository implements IReportRepository {
   async getTopProducts(
     params: GetTopProductsParams,
   ): Promise<TopProductEntity[]> {
-    const {
-      limit = 10,
-      startDate,
-      endDate,
-      sortBy = "revenue",
-    } = params;
+    const { limit = 10, startDate, endDate, sortBy = "revenue" } = params;
 
     const end = endDate || new Date();
     const start =
@@ -91,7 +83,7 @@ export class PrismaReportRepository implements IReportRepository {
             id: true,
             name: true,
             slug: true,
-            image: true,
+            images: true,
           },
         },
       },
@@ -113,7 +105,7 @@ export class PrismaReportRepository implements IReportRepository {
           id: item.product.id,
           name: item.product.name,
           slug: item.product.slug,
-          image: item.product.image,
+          image: item.product.images?.[0] || null,
           totalQuantity: item.quantity,
           totalRevenue: Number(item.price) * item.quantity,
           orderCount: 1,
@@ -264,12 +256,8 @@ export class PrismaReportRepository implements IReportRepository {
   async getSummaryStats(): Promise<SummaryStatsEntity> {
     const now = new Date();
     const todayStart = new Date(now.setHours(0, 0, 0, 0));
-    const weekStart = new Date(
-      now.getTime() - 7 * 24 * 60 * 60 * 1000,
-    );
-    const monthStart = new Date(
-      now.getTime() - 30 * 24 * 60 * 60 * 1000,
-    );
+    const weekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const monthStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const [
       todayOrders,

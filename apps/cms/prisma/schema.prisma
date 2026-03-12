@@ -2,7 +2,7 @@
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
@@ -16,39 +16,39 @@ datasource db {
 // ============================================
 
 model User {
-  id           Int       @id @default(autoincrement())
-  email        String    @unique
-  phone        String?   @unique
+  id           Int     @id @default(autoincrement())
+  email        String  @unique
+  phone        String? @unique
   passwordHash String?
-  role         Role      @default(PARENT)
+  role         Role    @default(PARENT)
   name         String
   avatar       String?
-  isActive     Boolean   @default(true)
-  isVerified   Boolean   @default(false)
-  
+  isActive     Boolean @default(true)
+  isVerified   Boolean @default(false)
+
   // Password reset
-  resetToken      String?
+  resetToken       String?
   resetTokenExpiry DateTime?
-  
+
   // Account security
   failedLoginAttempts Int       @default(0)
   lockedUntil         DateTime?
   lastLoginAt         DateTime?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Soft delete
 
   // Relations
-  wallet          Wallet?
-  students        Student[]
-  orders          Order[]
-  notifications   Notification[]
-  topUpRequests   TopUpRequest[]
-  approvedTopUps  TopUpRequest[]  @relation("TopUpApprover")
-  sessions        Session[]
+  wallet                Wallet?
+  students              Student[]
+  orders                Order[]
+  notifications         Notification[]
+  topUpRequests         TopUpRequest[]
+  approvedTopUps        TopUpRequest[]         @relation("TopUpApprover")
+  sessions              Session[]
   inventoryTransactions InventoryTransaction[] @relation("InventoryPerformer")
-  
+
   @@index([email])
   @@index([phone])
   @@index([role])
@@ -68,9 +68,9 @@ model Session {
   sessionToken String   @unique
   userId       Int
   expires      DateTime
-  
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+
   @@index([userId])
 }
 
@@ -87,24 +87,49 @@ model VerificationToken {
 // ============================================
 
 model Student {
-  id         Int      @id @default(autoincrement())
+  id         Int     @id @default(autoincrement())
   name       String
   grade      String
   school     String
-  cardNumber String?  @unique
-  avatar     String?  // Base64 encoded image
-  isActive   Boolean  @default(true)
+  cardNumber String? @unique
+  avatar     String? // Base64 encoded image
+  isActive   Boolean @default(true)
   parentId   Int
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  // Parent-child relationship lock
+  firstPaidAt DateTime? // When parent first paid (order or top-up)
+  firstPaidBy Int? // Parent ID who paid first (locks relationship)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Soft delete
 
-  parent User     @relation(fields: [parentId], references: [id])
-  orders Order[]
-  
+  parent        User           @relation(fields: [parentId], references: [id])
+  orders        Order[]
+  spendingLimit SpendingLimit?
+
   @@index([parentId])
   @@index([cardNumber])
+}
+
+// ============================================
+// SPENDING LIMITS (Parent Controls)
+// ============================================
+
+model SpendingLimit {
+  id           Int      @id @default(autoincrement())
+  studentId    Int      @unique
+  dailyLimit   Decimal? @db.Decimal(10, 2) // null = unlimited
+  weeklyLimit  Decimal? @db.Decimal(10, 2)
+  monthlyLimit Decimal? @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  updatedBy Int // Parent ID who set/updated limits
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
 }
 
 // ============================================
@@ -116,13 +141,13 @@ model Wallet {
   userId   Int     @unique
   balance  Decimal @default(0) @db.Decimal(10, 2)
   isLocked Boolean @default(false)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user         User          @relation(fields: [userId], references: [id])
   transactions Transaction[]
-  
+
   @@index([userId])
 }
 
@@ -135,14 +160,19 @@ model Transaction {
   balanceAfter  Decimal         @db.Decimal(10, 2)
   description   String?
   metadata      Json?
-  
+
+  // Parent tracking for top-ups
+  performedBy Int? // Parent ID for top-ups
+  orderId     Int? // Link to order if type = PURCHASE
+
   createdAt DateTime @default(now())
 
   wallet Wallet @relation(fields: [walletId], references: [id])
-  
+
   @@index([walletId])
   @@index([type])
   @@index([createdAt])
+  @@index([performedBy])
 }
 
 enum TransactionType {
@@ -158,18 +188,18 @@ model TopUpRequest {
   userId      Int
   amount      Decimal     @db.Decimal(10, 2)
   status      TopUpStatus @default(PENDING)
-  proofImage  String?     // Upload proof of bank transfer
-  notes       String?     // User notes
-  adminNotes  String?     // Admin rejection reason
-  approvedBy  Int?        // Admin user ID
+  proofImage  String? // Upload proof of bank transfer
+  notes       String? // User notes
+  adminNotes  String? // Admin rejection reason
+  approvedBy  Int? // Admin user ID
   processedAt DateTime?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user     User  @relation(fields: [userId], references: [id])
   approver User? @relation("TopUpApprover", fields: [approvedBy], references: [id])
-  
+
   @@index([userId])
   @@index([status])
   @@index([createdAt])
@@ -193,31 +223,31 @@ model Category {
   image       String?
   isActive    Boolean @default(true)
   sortOrder   Int     @default(0)
-  
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Soft delete
 
   products Product[]
-  
+
   @@index([slug])
   @@index([isActive])
 }
 
 model Supplier {
-  id          Int     @id @default(autoincrement())
-  name        String
-  email       String?
-  phone       String?
-  address     String?
-  isActive    Boolean @default(true)
-  
+  id       Int     @id @default(autoincrement())
+  name     String
+  email    String?
+  phone    String?
+  address  String?
+  isActive Boolean @default(true)
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Soft delete
 
   products Product[]
-  
+
   @@index([isActive])
 }
 
@@ -228,28 +258,27 @@ model Product {
   description String?
   price       Decimal  @db.Decimal(10, 2)
   stock       Int      @default(0)
-  lowStockThreshold Int? // Alert when stock falls below this value
   images      String[]
   categoryId  Int
   supplierId  Int?
   isActive    Boolean  @default(true)
   isFeatured  Boolean  @default(false)
-  
+
   // Nutritional info (optional)
-  calories    Int?
-  protein     Decimal? @db.Decimal(5, 2)
-  carbs       Decimal? @db.Decimal(5, 2)
-  fat         Decimal? @db.Decimal(5, 2)
-  
+  calories Int?
+  protein  Decimal? @db.Decimal(5, 2)
+  carbs    Decimal? @db.Decimal(5, 2)
+  fat      Decimal? @db.Decimal(5, 2)
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Soft delete
 
-  category   Category    @relation(fields: [categoryId], references: [id])
-  supplier   Supplier?   @relation(fields: [supplierId], references: [id])
-  orderItems OrderItem[]
+  category              Category               @relation(fields: [categoryId], references: [id])
+  supplier              Supplier?              @relation(fields: [supplierId], references: [id])
+  orderItems            OrderItem[]
   inventoryTransactions InventoryTransaction[]
-  
+
   @@index([slug])
   @@index([categoryId])
   @@index([isActive])
@@ -261,34 +290,42 @@ model Product {
 // ============================================
 
 model Order {
-  id            Int         @id @default(autoincrement())
-  orderNumber   String      @unique
+  id            Int           @id @default(autoincrement())
+  orderNumber   String        @unique
   userId        Int
   studentId     Int?
-  status        OrderStatus @default(PENDING)
+  parentId      Int? // Parent who paid or will pay
+  status        OrderStatus   @default(PENDING)
   paymentStatus PaymentStatus @default(PENDING)
-  total         Decimal     @db.Decimal(10, 2)
-  paymentMethod String      @default("WALLET")
+  total         Decimal       @db.Decimal(10, 2)
+  paymentMethod String        @default("WALLET")
   notes         String?
-  
+
+  // Approval flow for over-limit orders
+  needsApproval Boolean   @default(false)
+  approvedAt    DateTime?
+  approvedBy    Int? // Parent ID who approved
+
   // Fulfillment
   preparedAt  DateTime?
   readyAt     DateTime?
   completedAt DateTime?
   cancelledAt DateTime?
-  
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Soft delete
 
-  user    User       @relation(fields: [userId], references: [id])
-  student Student?   @relation(fields: [studentId], references: [id])
+  user    User        @relation(fields: [userId], references: [id])
+  student Student?    @relation(fields: [studentId], references: [id])
   items   OrderItem[]
-  
+
   @@index([userId])
   @@index([studentId])
+  @@index([parentId])
   @@index([status])
   @@index([paymentStatus])
+  @@index([needsApproval])
   @@index([createdAt])
   @@index([orderNumber])
 }
@@ -315,12 +352,38 @@ model OrderItem {
   productId Int
   quantity  Int
   price     Decimal @db.Decimal(10, 2)
-  
+
   order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id])
-  
+
   @@index([orderId])
   @@index([productId])
+}
+
+// Parent Actions Log (Track first payment for relationship lock)
+model ParentAction {
+  id        Int              @id @default(autoincrement())
+  parentId  Int
+  studentId Int
+  action    ParentActionType
+  amount    Decimal?         @db.Decimal(10, 2)
+  orderId   Int?
+  metadata  Json? // Extra data: limits set, products blocked, etc.
+
+  createdAt DateTime @default(now())
+
+  @@index([parentId, studentId, createdAt])
+  @@index([studentId])
+  @@index([action])
+}
+
+enum ParentActionType {
+  TOP_UP // Parent topped up student wallet
+  PAY_ORDER // Parent paid for student order
+  SET_LIMIT // Parent set spending limit
+  UPDATE_LIMIT // Parent updated limit
+  APPROVE_ORDER // Parent approved over-limit order
+  REJECT_ORDER // Parent rejected order
 }
 
 // ============================================
@@ -328,18 +391,18 @@ model OrderItem {
 //============================================
 
 model Notification {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  title     String
-  message   String
-  type      NotificationType @default(INFO)
-  isRead    Boolean  @default(false)
-  metadata  Json?
-  
+  id       Int              @id @default(autoincrement())
+  userId   Int
+  title    String
+  message  String
+  type     NotificationType @default(INFO)
+  isRead   Boolean          @default(false)
+  metadata Json?
+
   createdAt DateTime @default(now())
-  
+
   user User @relation(fields: [userId], references: [id])
-  
+
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
@@ -360,23 +423,23 @@ enum NotificationType {
 // ============================================
 
 model Voucher {
-  id          Int      @id @default(autoincrement())
-  code        String   @unique
-  description String?
-  discount    Decimal  @db.Decimal(10, 2)
+  id           Int          @id @default(autoincrement())
+  code         String       @unique
+  description  String?
+  discount     Decimal      @db.Decimal(10, 2)
   discountType DiscountType @default(PERCENTAGE)
-  minAmount   Decimal? @db.Decimal(10, 2)
-  maxDiscount Decimal? @db.Decimal(10, 2)
-  usageLimit  Int?
-  usageCount  Int      @default(0)
-  startsAt    DateTime
-  expiresAt   DateTime
-  isActive    Boolean  @default(true)
-  
+  minAmount    Decimal?     @db.Decimal(10, 2)
+  maxDiscount  Decimal?     @db.Decimal(10, 2)
+  usageLimit   Int?
+  usageCount   Int          @default(0)
+  startsAt     DateTime
+  expiresAt    DateTime
+  isActive     Boolean      @default(true)
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Soft delete
-  
+
   @@index([code])
   @@index([isActive])
   @@index([expiresAt])
@@ -392,17 +455,17 @@ enum DiscountType {
 // ============================================
 
 model School {
-  id      Int     @id @default(autoincrement())
-  name    String
-  address String?
-  phone   String?
-  email   String?
+  id       Int     @id @default(autoincrement())
+  name     String
+  address  String?
+  phone    String?
+  email    String?
   isActive Boolean @default(true)
-  
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime? // Soft delete
-  
+
   @@index([isActive])
 }
 
@@ -411,26 +474,26 @@ model School {
 // ============================================
 
 model InventoryTransaction {
-  id          Int                @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   productId   Int
-  quantity    Int                // Positive for IN/ADJUSTMENT, negative for OUT
+  quantity    Int // Positive for IN/ADJUSTMENT, negative for OUT
   type        InventoryType
   reason      String?
   performedBy Int
-  
+
   createdAt DateTime @default(now())
-  
+
   product Product @relation(fields: [productId], references: [id])
   user    User    @relation("InventoryPerformer", fields: [performedBy], references: [id])
-  
+
   @@index([productId])
   @@index([type])
-  @@index([createdAt])
   @@index([performedBy])
+  @@index([createdAt])
 }
 
 enum InventoryType {
-  IN        // Import stock
-  OUT       // Sale/usage
-  ADJUSTMENT // Manual adjustment
+  IN // Stock in (nhập kho)
+  OUT // Stock out (xuất kho)
+  ADJUSTMENT // Manual adjustment (điều chỉnh)
 }

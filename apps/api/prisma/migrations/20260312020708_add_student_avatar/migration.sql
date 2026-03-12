@@ -21,7 +21,7 @@ CREATE TYPE "DiscountType" AS ENUM ('PERCENTAGE', 'FIXED');
 
 -- CreateTable
 CREATE TABLE "User" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "email" TEXT NOT NULL,
     "phone" TEXT,
     "passwordHash" TEXT,
@@ -44,9 +44,9 @@ CREATE TABLE "User" (
 
 -- CreateTable
 CREATE TABLE "Session" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "sessionToken" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
+    "userId" INTEGER NOT NULL,
     "expires" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "Session_pkey" PRIMARY KEY ("id")
@@ -61,13 +61,14 @@ CREATE TABLE "VerificationToken" (
 
 -- CreateTable
 CREATE TABLE "Student" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "grade" TEXT NOT NULL,
     "school" TEXT NOT NULL,
     "cardNumber" TEXT,
+    "avatar" TEXT,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "parentId" TEXT NOT NULL,
+    "parentId" INTEGER NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "deletedAt" TIMESTAMP(3),
@@ -77,8 +78,8 @@ CREATE TABLE "Student" (
 
 -- CreateTable
 CREATE TABLE "Wallet" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
     "balance" DECIMAL(10,2) NOT NULL DEFAULT 0,
     "isLocked" BOOLEAN NOT NULL DEFAULT false,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -89,8 +90,8 @@ CREATE TABLE "Wallet" (
 
 -- CreateTable
 CREATE TABLE "Transaction" (
-    "id" TEXT NOT NULL,
-    "walletId" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "walletId" INTEGER NOT NULL,
     "type" "TransactionType" NOT NULL,
     "amount" DECIMAL(10,2) NOT NULL,
     "balanceBefore" DECIMAL(10,2) NOT NULL,
@@ -104,14 +105,14 @@ CREATE TABLE "Transaction" (
 
 -- CreateTable
 CREATE TABLE "TopUpRequest" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
     "amount" DECIMAL(10,2) NOT NULL,
     "status" "TopUpStatus" NOT NULL DEFAULT 'PENDING',
     "proofImage" TEXT,
     "notes" TEXT,
     "adminNotes" TEXT,
-    "approvedBy" TEXT,
+    "approvedBy" INTEGER,
     "processedAt" TIMESTAMP(3),
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
@@ -121,7 +122,7 @@ CREATE TABLE "TopUpRequest" (
 
 -- CreateTable
 CREATE TABLE "Category" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "description" TEXT,
@@ -137,7 +138,7 @@ CREATE TABLE "Category" (
 
 -- CreateTable
 CREATE TABLE "Supplier" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT,
     "phone" TEXT,
@@ -152,15 +153,15 @@ CREATE TABLE "Supplier" (
 
 -- CreateTable
 CREATE TABLE "Product" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "description" TEXT,
     "price" DECIMAL(10,2) NOT NULL,
     "stock" INTEGER NOT NULL DEFAULT 0,
     "images" TEXT[],
-    "categoryId" TEXT NOT NULL,
-    "supplierId" TEXT,
+    "categoryId" INTEGER NOT NULL,
+    "supplierId" INTEGER,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "isFeatured" BOOLEAN NOT NULL DEFAULT false,
     "calories" INTEGER,
@@ -176,10 +177,10 @@ CREATE TABLE "Product" (
 
 -- CreateTable
 CREATE TABLE "Order" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "orderNumber" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
-    "studentId" TEXT,
+    "userId" INTEGER NOT NULL,
+    "studentId" INTEGER,
     "status" "OrderStatus" NOT NULL DEFAULT 'PENDING',
     "paymentStatus" "PaymentStatus" NOT NULL DEFAULT 'PENDING',
     "total" DECIMAL(10,2) NOT NULL,
@@ -198,9 +199,9 @@ CREATE TABLE "Order" (
 
 -- CreateTable
 CREATE TABLE "OrderItem" (
-    "id" TEXT NOT NULL,
-    "orderId" TEXT NOT NULL,
-    "productId" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "orderId" INTEGER NOT NULL,
+    "productId" INTEGER NOT NULL,
     "quantity" INTEGER NOT NULL,
     "price" DECIMAL(10,2) NOT NULL,
 
@@ -209,8 +210,8 @@ CREATE TABLE "OrderItem" (
 
 -- CreateTable
 CREATE TABLE "Notification" (
-    "id" TEXT NOT NULL,
-    "userId" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
     "title" TEXT NOT NULL,
     "message" TEXT NOT NULL,
     "type" "NotificationType" NOT NULL DEFAULT 'INFO',
@@ -223,7 +224,7 @@ CREATE TABLE "Notification" (
 
 -- CreateTable
 CREATE TABLE "Voucher" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "code" TEXT NOT NULL,
     "description" TEXT,
     "discount" DECIMAL(10,2) NOT NULL,
@@ -244,7 +245,7 @@ CREATE TABLE "Voucher" (
 
 -- CreateTable
 CREATE TABLE "School" (
-    "id" TEXT NOT NULL,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "address" TEXT,
     "phone" TEXT,

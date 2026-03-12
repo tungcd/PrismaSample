@@ -20,6 +20,8 @@ import {
   Truck,
   Receipt,
   CreditCard,
+  Ticket,
+  Warehouse,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { User } from "@/lib/auth-client";
@@ -95,6 +97,18 @@ const navigation: NavigationItem[] = [
     name: "Quản lý ví",
     href: "/dashboard/wallets",
     icon: CreditCard,
+    roles: [Role.ADMIN, Role.MANAGER],
+  },
+  {
+    name: "Vouchers",
+    href: "/dashboard/vouchers",
+    icon: Ticket,
+    roles: [Role.ADMIN, Role.MANAGER],
+  },
+  {
+    name: "Quản lý kho",
+    href: "/dashboard/inventory",
+    icon: Warehouse,
     roles: [Role.ADMIN, Role.MANAGER],
   },
   {

@@ -6,12 +6,13 @@ import { DataTable } from "@/components/ui/data-table";
 import { ProductEntity } from "@/domain/entities/product.entity";
 import { productColumns } from "./product-columns";
 import { ProductDialog } from "./product-dialog";
+import { StockAdjustmentDialog } from "../../inventory/_components/stock-adjustment-dialog";
 import { deleteProductAction, toggleProductActiveAction } from "../actions";
 import type {
   DataTableConfig,
   PaginatedResult,
 } from "@/types/data-table.types";
-import { Pencil, Trash2, Power } from "lucide-react";
+import { Pencil, Trash2, Power, Package } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProductsTableProps {
@@ -36,6 +37,9 @@ export function ProductsTable({
   const [editingProduct, setEditingProduct] = useState<ProductEntity | null>(
     null,
   );
+  const [stockDialogOpen, setStockDialogOpen] = useState(false);
+  const [adjustingProduct, setAdjustingProduct] =
+    useState<ProductEntity | null>(null);
 
   const handleToggleActive = async (product: ProductEntity) => {
     setLoading(product.id);
@@ -79,6 +83,11 @@ export function ProductsTable({
   const handleEdit = (product: ProductEntity) => {
     setEditingProduct(product);
     setDialogOpen(true);
+  };
+
+  const handleAdjustStock = (product: ProductEntity) => {
+    setAdjustingProduct(product);
+    setStockDialogOpen(true);
   };
 
   const handleSuccess = () => {
@@ -163,6 +172,11 @@ export function ProductsTable({
         onClick: handleEdit,
       },
       {
+        label: "Điều chỉnh kho",
+        icon: <Package className="h-4 w-4" />,
+        onClick: handleAdjustStock,
+      },
+      {
         label: "Khóa/Kích hoạt",
         icon: <Power className="h-4 w-4" />,
         onClick: handleToggleActive,
@@ -187,6 +201,15 @@ export function ProductsTable({
         onSuccess={handleSuccess}
         categoryOptions={categoryOptions}
       />
+      {adjustingProduct && (
+        <StockAdjustmentDialog
+          open={stockDialogOpen}
+          onOpenChange={setStockDialogOpen}
+          productId={adjustingProduct.id}
+          productName={adjustingProduct.name}
+          currentStock={adjustingProduct.stock}
+        />
+      )}
     </>
   );
 }

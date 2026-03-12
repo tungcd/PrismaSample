@@ -23,7 +23,7 @@ async function main() {
   await prisma.user.deleteMany();
 
   // Hash password
-  const hashedPassword = await bcrypt.hash("123456", 10);
+  const hashedPassword = await bcrypt.hash("Admin@123", 10);
 
   // ==================== USERS ====================
   console.log("👤 Creating users...");
@@ -639,6 +639,65 @@ async function main() {
 
   console.log("✅ Created wallet transactions");
 
+  // ==================== TOP-UP REQUESTS ====================
+  console.log("💳 Creating top-up requests...");
+
+  // Pending request from parent1
+  await prisma.topUpRequest.create({
+    data: {
+      userId: parents[0].id,
+      amount: 500000,
+      status: "PENDING",
+      notes: "Nạp tiền cho con ăn tuần này",
+    },
+  });
+
+  // Approved request from parent2 (processed 2 days ago)
+  const twoDaysAgo = new Date();
+  twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+
+  await prisma.topUpRequest.create({
+    data: {
+      userId: parents[1].id,
+      amount: 300000,
+      status: "APPROVED",
+      notes: "Nạp tiền cho con",
+      adminNotes: "Đã xác nhận chuyển khoản",
+      approvedBy: admin.id,
+      processedAt: twoDaysAgo,
+      createdAt: twoDaysAgo,
+    },
+  });
+
+  // Rejected request from parent3 (processed yesterday)
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  await prisma.topUpRequest.create({
+    data: {
+      userId: parents[2].id,
+      amount: 200000,
+      status: "REJECTED",
+      notes: "Nạp tiền khẩn cấp",
+      adminNotes: "Ảnh chứng từ không rõ ràng, vui lòng gửi lại",
+      approvedBy: manager.id,
+      processedAt: yesterday,
+      createdAt: yesterday,
+    },
+  });
+
+  // Another pending request from parent4
+  await prisma.topUpRequest.create({
+    data: {
+      userId: parents[3].id,
+      amount: 1000000,
+      status: "PENDING",
+      notes: "Nạp tiền tháng này",
+    },
+  });
+
+  console.log("✅ Created 4 top-up requests");
+
   console.log("\n🎉 Seed completed successfully!");
   console.log("\n📊 Summary:");
   console.log(`   - Users: ${parents.length + 3} (1 Admin, 1 Manager, 1 Staff, ${parents.length} Parents)`);
@@ -648,14 +707,15 @@ async function main() {
   console.log(`   - Suppliers: ${suppliers.length}`);
   console.log(`   - Products: ${products.length}`);
   console.log(`   - Orders: 3`);
+  console.log(`   - Top-up Requests: 4 (2 Pending, 1 Approved, 1 Rejected)`);
   console.log("\n🔑 Login credentials:");
-  console.log("   Admin:   admin@smartcanteen.com / 123456");
-  console.log("   Manager: manager@smartcanteen.com / 123456");
-  console.log("   Staff:   staff@smartcanteen.com / 123456");
-  console.log("   Parents: parent1@gmail.com / 123456");
-  console.log("            parent2@gmail.com / 123456");
-  console.log("            parent3@gmail.com / 123456");
-  console.log("            parent4@gmail.com / 123456");
+  console.log("   Admin:   admin@smartcanteen.com / Admin@123");
+  console.log("   Manager: manager@smartcanteen.com / Admin@123");
+  console.log("   Staff:   staff@smartcanteen.com / Admin@123");
+  console.log("   Parents: parent1@gmail.com / Admin@123");
+  console.log("            parent2@gmail.com / Admin@123");
+  console.log("            parent3@gmail.com / Admin@123");
+  console.log("            parent4@gmail.com / Admin@123");
 }
 
 main()

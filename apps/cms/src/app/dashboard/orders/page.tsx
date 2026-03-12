@@ -8,6 +8,8 @@ interface OrdersPageProps {
     orderNumber?: string;
     status?: string;
     paymentStatus?: string;
+    user?: string; // Filter by userId
+    student?: string; // Filter by studentId
     sortBy?: string;
     sortOrder?: string;
   };
@@ -23,6 +25,8 @@ export default async function OrdersPage({ searchParams }: OrdersPageProps) {
     orderNumber: searchParams.orderNumber,
     status: searchParams.status,
     paymentStatus: searchParams.paymentStatus,
+    userId: searchParams.user ? parseInt(searchParams.user) : undefined,
+    studentId: searchParams.student ? parseInt(searchParams.student) : undefined,
     sortBy: searchParams.sortBy as any,
     sortOrder: searchParams.sortOrder as any,
   };

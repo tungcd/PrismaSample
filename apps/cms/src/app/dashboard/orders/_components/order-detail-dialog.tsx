@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { formatDateTime } from "@/lib/utils/date";
 
 interface OrderDetailDialogProps {
   open: boolean;
@@ -31,11 +32,7 @@ export function OrderDetailDialog({
     }).format(amount);
   };
 
-  const formatDateTime = (date: Date | null) => {
-    if (!date) return "-";
-    const d = new Date(date);
-    return `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`;
-  };
+
 
   const getStatusLabel = (status: string) => {
     const statusMap: Record<string, string> = {
@@ -215,30 +212,30 @@ export function OrderDetailDialog({
           <div className="grid grid-cols-2 gap-3 text-xs">
             <div>
               <p className="text-muted-foreground">Ngày tạo</p>
-              <p>{formatDateTime(order.createdAt)}</p>
+              <p suppressHydrationWarning>{formatDateTime(order.createdAt)}</p>
             </div>
             {order.preparedAt && (
               <div>
                 <p className="text-muted-foreground">Bắt đầu chuẩn bị</p>
-                <p>{formatDateTime(order.preparedAt)}</p>
+                <p suppressHydrationWarning>{formatDateTime(order.preparedAt)}</p>
               </div>
             )}
             {order.readyAt && (
               <div>
                 <p className="text-muted-foreground">Sẵn sàng</p>
-                <p>{formatDateTime(order.readyAt)}</p>
+                <p suppressHydrationWarning>{formatDateTime(order.readyAt)}</p>
               </div>
             )}
             {order.completedAt && (
               <div>
                 <p className="text-muted-foreground">Hoàn thành</p>
-                <p>{formatDateTime(order.completedAt)}</p>
+                <p suppressHydrationWarning>{formatDateTime(order.completedAt)}</p>
               </div>
             )}
             {order.cancelledAt && (
               <div>
                 <p className="text-muted-foreground">Đã hủy</p>
-                <p>{formatDateTime(order.cancelledAt)}</p>
+                <p suppressHydrationWarning>{formatDateTime(order.cancelledAt)}</p>
               </div>
             )}
           </div>

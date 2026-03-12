@@ -15,6 +15,7 @@ import { deleteUserAction, toggleUserActiveAction } from "../actions";
 import { UserDialog } from "./user-dialog";
 import { toast } from "sonner";
 import { formatPhoneNumber } from "@/lib/utils";
+import { formatDateTime } from "@/lib/utils/date";
 
 interface UsersTableProps {
   data: GetUsersResult;
@@ -80,16 +81,7 @@ export function UsersTable({ data }: UsersTableProps) {
     return <Badge variant={roleInfo.variant as any}>{roleInfo.label}</Badge>;
   };
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return "-";
-    const d = new Date(date);
-    const day = String(d.getDate()).padStart(2, "0");
-    const month = String(d.getMonth() + 1).padStart(2, "0");
-    const year = d.getFullYear();
-    const hour = String(d.getHours()).padStart(2, "0");
-    const minute = String(d.getMinutes()).padStart(2, "0");
-    return `${day}/${month}/${year} ${hour}:${minute}`;
-  };
+
 
   // Transform GetUsersResult to PaginatedResult
   const result: PaginatedResult<UserEntity> = {
@@ -175,7 +167,7 @@ export function UsersTable({ data }: UsersTableProps) {
         key: "lastLoginAt",
         label: "Đăng nhập lần cuối",
         render: (user) => (
-          <span suppressHydrationWarning>{formatDate(user.lastLoginAt)}</span>
+          <span suppressHydrationWarning>{formatDateTime(user.lastLoginAt)}</span>
         ),
       },
     ],

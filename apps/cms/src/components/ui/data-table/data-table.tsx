@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
+import { useState, useEffect, useTransition, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Table,
@@ -56,6 +56,12 @@ export function DataTable<T extends { id: string | number }>({
   const [textFilters, setTextFilters] = useState<Record<string, string>>({});
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Store debounce timer ref to cancel on clear
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Flag to prevent useEffect from running during clear filters
+  const isClearingFiltersRef = useRef(false);
+
   // Initialize text filters from URL (only once on mount)
   useEffect(() => {
     const filters: Record<string, string> = {};
@@ -71,6 +77,7 @@ export function DataTable<T extends { id: string | number }>({
   // Debounce text filter changes (skip on initial render)
   useEffect(() => {
     if (!isInitialized) return; // Skip on initial render
+    if (isClearingFiltersRef.current) return; // Skip when clearing filters
 
     const debouncedColumns = config.columns.filter(
       (col) =>
@@ -81,7 +88,13 @@ export function DataTable<T extends { id: string | number }>({
 
     if (debouncedColumns.length === 0) return;
 
-    const timer = setTimeout(() => {
+    // Clear previous timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new timer
+    debounceTimerRef.current = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString());
 
       debouncedColumns.forEach((col) => {
@@ -98,9 +111,15 @@ export function DataTable<T extends { id: string | number }>({
       startTransition(() => {
         router.push(`?${params.toString()}`);
       });
+
+      debounceTimerRef.current = null;
     }, 500);
 
-    return () => clearTimeout(timer);
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, [textFilters, isInitialized]); // Only trigger when textFilters change (not searchParams)
 
   // Update data when result changes
@@ -177,20 +196,28 @@ export function DataTable<T extends { id: string | number }>({
 
   // Clear all filters, keep sort and pagination
   const handleClearFilters = () => {
+    // Set flag to prevent useEffect from triggering
+    isClearingFiltersRef.current = true;
+    
+    // Cancel any pending debounce timers first
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+
     const params = new URLSearchParams();
 
-    // Keep sort and pagination
+    // Keep sort and pageSize, but reset page to 1
     const sortBy = searchParams.get("sortBy");
     const sortOrder = searchParams.get("sortOrder");
-    const page = searchParams.get("page");
     const pageSize = searchParams.get("pageSize");
 
     if (sortBy) params.set("sortBy", sortBy);
     if (sortOrder) params.set("sortOrder", sortOrder);
-    if (page) params.set("page", page);
+    params.set("page", "1"); // Reset to first page
     if (pageSize) params.set("pageSize", pageSize);
 
-    // Clear text filters state
+    // Clear text filters state AFTER canceling timer
     const emptyFilters: Record<string, string> = {};
     config.columns.forEach((col) => {
       if (col.filterable && col.filter?.type === "text") {
@@ -199,9 +226,17 @@ export function DataTable<T extends { id: string | number }>({
     });
     setTextFilters(emptyFilters);
 
-    startTransition(() => {
-      router.push(`?${params.toString()}`);
-    });
+    // Use replace instead of push to update URL
+    const newUrl = params.toString()
+      ? `?${params.toString()}`
+      : window.location.pathname;
+    router.replace(newUrl);
+    router.refresh();
+    
+    // Reset flag after a short delay to allow navigation to complete
+    setTimeout(() => {
+      isClearingFiltersRef.current = false;
+    }, 100);
   };
 
   const renderFilter = (column: DataTableColumn<T>) => {

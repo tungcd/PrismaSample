@@ -5,6 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+// Re-export date formatting utilities
+export {
+  formatDateTime,
+  formatDate,
+  formatTime,
+  formatDateTimeWithSeconds,
+} from "./utils/date";
+
 /**
  * Format phone number from international format (+84) to Vietnamese domestic format (0)
  * @param phone - Phone number to format

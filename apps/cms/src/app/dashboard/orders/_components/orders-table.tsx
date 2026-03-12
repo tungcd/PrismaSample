@@ -14,6 +14,7 @@ import { Eye, Trash2, CheckCircle, XCircle } from "lucide-react";
 import { deleteOrderAction, updateOrderStatusAction } from "../actions";
 import { OrderDetailDialog } from "./order-detail-dialog";
 import { toast } from "sonner";
+import { formatDate } from "@/lib/utils/date";
 
 interface OrdersTableProps {
   data: GetOrdersResult;
@@ -80,8 +81,7 @@ export function OrdersTable({ data }: OrdersTableProps) {
   };
 
   const handleDelete = async (order: OrderEntity) => {
-    if (!confirm(`Bạn có chắc muốn xóa đơn hàng ${order.orderNumber}?`))
-      return;
+    if (!confirm(`Bạn có chắc muốn xóa đơn hàng ${order.orderNumber}?`)) return;
 
     const result = await deleteOrderAction(order.id);
     if (result.success) {
@@ -97,7 +97,10 @@ export function OrdersTable({ data }: OrdersTableProps) {
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<
       string,
-      { variant: "default" | "secondary" | "destructive" | "outline"; label: string }
+      {
+        variant: "default" | "secondary" | "destructive" | "outline";
+        label: string;
+      }
     > = {
       PENDING: { variant: "secondary", label: "Chờ xử lý" },
       CONFIRMED: { variant: "default", label: "Đã xác nhận" },
@@ -117,7 +120,10 @@ export function OrdersTable({ data }: OrdersTableProps) {
   const getPaymentBadge = (status: string) => {
     const statusConfig: Record<
       string,
-      { variant: "default" | "secondary" | "destructive" | "outline"; label: string }
+      {
+        variant: "default" | "secondary" | "destructive" | "outline";
+        label: string;
+      }
     > = {
       PENDING: { variant: "secondary", label: "Chưa TT" },
       PAID: { variant: "default", label: "Đã TT" },
@@ -159,11 +165,21 @@ export function OrdersTable({ data }: OrdersTableProps) {
       {
         key: "user",
         label: "Phụ huynh",
+        filterable: true,
+        filter: {
+          type: "text",
+          placeholder: "Tìm theo ID phụ huynh...",
+        },
         render: (order) => order.user?.name || "-",
       },
       {
         key: "student",
         label: "Học sinh",
+        filterable: true,
+        filter: {
+          type: "text",
+          placeholder: "Tìm theo ID học sinh...",
+        },
         render: (order) =>
           order.student ? (
             <div className="flex flex-col">
@@ -195,7 +211,14 @@ export function OrdersTable({ data }: OrdersTableProps) {
         filterable: true,
         filter: {
           type: "select",
-          options: ORDER_STATUSES.map((s) => ({ value: s.value, label: s.label })),
+          placeholder: "Lọc trạng thái",
+          options: [
+            { value: "all", label: "Tất cả" },
+            ...ORDER_STATUSES.map((s) => ({
+              value: s.value,
+              label: s.label,
+            })),
+          ],
         },
         render: (order) => getStatusBadge(order.status),
       },
@@ -205,10 +228,14 @@ export function OrdersTable({ data }: OrdersTableProps) {
         filterable: true,
         filter: {
           type: "select",
-          options: PAYMENT_STATUSES.map((s) => ({
-            value: s.value,
-            label: s.label,
-          })),
+          placeholder: "Lọc thanh toán",
+          options: [
+            { value: "all", label: "Tất cả" },
+            ...PAYMENT_STATUSES.map((s) => ({
+              value: s.value,
+              label: s.label,
+            })),
+          ],
         },
         render: (order) => getPaymentBadge(order.paymentStatus),
       },
@@ -218,18 +245,7 @@ export function OrdersTable({ data }: OrdersTableProps) {
         sortable: true,
         render: (order) => {
           const date = new Date(order.createdAt);
-          return (
-            <span className="text-sm">
-              {date.toLocaleDateString("vi-VN")}
-              <br />
-              <span className="text-xs text-muted-foreground">
-                {date.toLocaleTimeString("vi-VN", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-            </span>
-          );
+          return <span className="text-sm" suppressHydrationWarning>{formatDate(date)}</span>;
         },
       },
     ],

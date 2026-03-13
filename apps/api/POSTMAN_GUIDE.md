@@ -35,13 +35,13 @@ Nếu file được host online, có thể import trực tiếp bằng URL.
 
 Collection đã được cấu hình sẵn các biến:
 
-| Biến | Giá trị mặc định | Mô tả |
-|------|------------------|-------|
-| `baseUrl` | `http://localhost:3001/api/v1` | URL gốc của API |
-| `accessToken` | _(auto-saved)_ | JWT token (tự động lưu sau login) |
-| `studentId` | `1` | ID học sinh để test |
-| `productId` | `1` | ID sản phẩm để test |
-| `orderId` | _(auto-saved)_ | ID đơn hàng (tự động lưu sau tạo order) |
+| Biến          | Giá trị mặc định               | Mô tả                                   |
+| ------------- | ------------------------------ | --------------------------------------- |
+| `baseUrl`     | `http://localhost:3001/api/v1` | URL gốc của API                         |
+| `accessToken` | _(auto-saved)_                 | JWT token (tự động lưu sau login)       |
+| `studentId`   | `1`                            | ID học sinh để test                     |
+| `productId`   | `1`                            | ID sản phẩm để test                     |
+| `orderId`     | _(auto-saved)_                 | ID đơn hàng (tự động lưu sau tạo order) |
 
 ### Thay đổi base URL
 
@@ -108,13 +108,13 @@ Collection đã được cấu hình sẵn các biến:
 
 Collection hỗ trợ test với nhiều role:
 
-| Role | Quyền hạn |
-|------|-----------|
-| **ADMIN** | Toàn quyền, xem tất cả dữ liệu, quản lý users |
-| **MANAGER** | Quản lý vận hành, xem báo cáo |
-| **STAFF** | Duyệt top-up, xử lý orders |
-| **PARENT** | Xem con của mình, tạo top-up request |
-| **STUDENT** | Đặt hàng, xem lịch sử của mình |
+| Role        | Quyền hạn                                     |
+| ----------- | --------------------------------------------- |
+| **ADMIN**   | Toàn quyền, xem tất cả dữ liệu, quản lý users |
+| **MANAGER** | Quản lý vận hành, xem báo cáo                 |
+| **STAFF**   | Duyệt top-up, xử lý orders                    |
+| **PARENT**  | Xem con của mình, tạo top-up request          |
+| **STUDENT** | Đặt hàng, xem lịch sử của mình                |
 
 Để test role khác nhau, login với tài khoản tương ứng.
 
@@ -152,15 +152,17 @@ Collection hỗ trợ test với nhiều role:
 Collection tự động lưu một số biến khi test:
 
 ### Login Request
+
 ```javascript
 // Auto-save accessToken
-pm.collectionVariables.set('accessToken', response.access_token);
+pm.collectionVariables.set("accessToken", response.access_token);
 ```
 
 ### Create Order Request
+
 ```javascript
 // Auto-save orderId
-pm.collectionVariables.set('orderId', response.id);
+pm.collectionVariables.set("orderId", response.id);
 ```
 
 ## Query Parameters
@@ -168,16 +170,19 @@ pm.collectionVariables.set('orderId', response.id);
 Nhiều endpoint hỗ trợ filter và pagination:
 
 ### Pagination
+
 ```
 ?page=1&limit=10
 ```
 
 ### Date Range
+
 ```
 ?fromDate=2026-01-01&toDate=2026-12-31
 ```
 
 ### Status Filter
+
 ```
 ?status=PENDING        # Orders
 ?status=APPROVED       # Top-up Requests
@@ -185,6 +190,7 @@ Nhiều endpoint hỗ trợ filter và pagination:
 ```
 
 ### Multiple Filters
+
 ```
 ?page=1&limit=10&status=COMPLETED&fromDate=2026-01-01&studentId=1
 ```
@@ -192,6 +198,7 @@ Nhiều endpoint hỗ trợ filter và pagination:
 ## Response Examples
 
 ### Login Success (201)
+
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -206,6 +213,7 @@ Nhiều endpoint hỗ trợ filter và pagination:
 ```
 
 ### Order Created (201)
+
 ```json
 {
   "id": 123,
@@ -224,6 +232,7 @@ Nhiều endpoint hỗ trợ filter và pagination:
 ```
 
 ### Student Spending Summary (200)
+
 ```json
 {
   "totalAmount": 500000,
@@ -246,17 +255,18 @@ Nhiều endpoint hỗ trợ filter và pagination:
 
 API trả về các status code chuẩn:
 
-| Code | Nghĩa | Ví dụ |
-|------|-------|-------|
-| 200 | OK | GET request thành công |
-| 201 | Created | POST/CREATE thành công |
-| 400 | Bad Request | Validation error, thiếu field |
-| 401 | Unauthorized | Chưa login hoặc token hết hạn |
-| 403 | Forbidden | Không có quyền truy cập |
-| 404 | Not Found | Resource không tồn tại |
-| 500 | Server Error | Lỗi server |
+| Code | Nghĩa        | Ví dụ                         |
+| ---- | ------------ | ----------------------------- |
+| 200  | OK           | GET request thành công        |
+| 201  | Created      | POST/CREATE thành công        |
+| 400  | Bad Request  | Validation error, thiếu field |
+| 401  | Unauthorized | Chưa login hoặc token hết hạn |
+| 403  | Forbidden    | Không có quyền truy cập       |
+| 404  | Not Found    | Resource không tồn tại        |
+| 500  | Server Error | Lỗi server                    |
 
 ### Error Response Example
+
 ```json
 {
   "statusCode": 400,
@@ -268,6 +278,7 @@ API trả về các status code chuẩn:
 ## Testing Scenarios
 
 ### Scenario 1: Complete Order Flow
+
 1. Login as STUDENT
 2. Add 2 products to cart
 3. View cart
@@ -277,6 +288,7 @@ API trả về các status code chuẩn:
 7. Cancel order → Refund issued
 
 ### Scenario 2: Parent Monitoring
+
 1. Login as PARENT
 2. Get all my students
 3. Get student orders history
@@ -285,6 +297,7 @@ API trả về các status code chuẩn:
 6. View transactions
 
 ### Scenario 3: Staff Operations
+
 1. Login as STAFF
 2. View pending top-up requests
 3. Approve/reject requests
@@ -296,6 +309,7 @@ API trả về các status code chuẩn:
 ### 1. Sử dụng Environments
 
 Tạo nhiều environments cho các môi trường khác nhau:
+
 - **Local** - http://localhost:3001
 - **Docker** - http://localhost:3001
 - **Staging** - https://staging.example.com
@@ -307,12 +321,12 @@ Thêm tests vào tab **Tests** để tự động validate response:
 
 ```javascript
 pm.test("Status code is 200", function () {
-    pm.response.to.have.status(200);
+  pm.response.to.have.status(200);
 });
 
 pm.test("Response has access_token", function () {
-    const response = pm.response.json();
-    pm.expect(response).to.have.property('access_token');
+  const response = pm.response.json();
+  pm.expect(response).to.have.property("access_token");
 });
 ```
 
@@ -322,14 +336,16 @@ Thêm logic trước khi gửi request:
 
 ```javascript
 // Generate random email
-pm.collectionVariables.set("randomEmail", 
-    "test_" + Math.random().toString(36).substring(7) + "@example.com"
+pm.collectionVariables.set(
+  "randomEmail",
+  "test_" + Math.random().toString(36).substring(7) + "@example.com",
 );
 ```
 
 ### 4. Run Collection
 
 Chạy toàn bộ collection tự động:
+
 1. Click **Runner** (góc trên)
 2. Chọn **Smart Canteen API**
 3. Click **Run Smart Canteen API**
@@ -337,15 +353,19 @@ Chạy toàn bộ collection tự động:
 ## Troubleshooting
 
 ### Token hết hạn (401)
+
 → Chạy lại **Login** request để lấy token mới
 
 ### Không có quyền (403)
+
 → Kiểm tra role của tài khoản đang login
 
 ### Student not found (404)
+
 → Cập nhật biến `studentId` với ID hợp lệ
 
 ### Insufficient balance (400)
+
 → Tạo top-up request và approve để nạp tiền vào ví
 
 ## API Documentation
@@ -368,6 +388,7 @@ Nếu gặp vấn đề với collection:
 ## Version History
 
 ### v1.0.0 (2026-03-13)
+
 - ✅ 90+ endpoints đầy đủ
 - ✅ Auto-save tokens
 - ✅ Đầy đủ query parameters

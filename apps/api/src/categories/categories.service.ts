@@ -16,7 +16,9 @@ export class CategoriesService {
         description: true,
         image: true,
         sortOrder: true,
-        _count: { select: { products: { where: { isActive: true, deletedAt: null } } } },
+        _count: {
+          select: { products: { where: { isActive: true, deletedAt: null } } },
+        },
       },
     });
   }
@@ -25,7 +27,9 @@ export class CategoriesService {
     const category = await this.prisma.category.findFirst({
       where: { id, isActive: true, deletedAt: null },
       include: {
-        _count: { select: { products: { where: { isActive: true, deletedAt: null } } } },
+        _count: {
+          select: { products: { where: { isActive: true, deletedAt: null } } },
+        },
       },
     });
 

@@ -47,6 +47,7 @@ model User {
   topUpRequests   TopUpRequest[]
   approvedTopUps  TopUpRequest[]  @relation("TopUpApprover")
   sessions        Session[]
+  inventoryTransactions InventoryTransaction[] @relation("InventoryPerformer")
   
   @@index([email])
   @@index([phone])
@@ -95,15 +96,40 @@ model Student {
   isActive   Boolean  @default(true)
   parentId   Int
   
+  // Parent-child relationship lock
+  firstPaidAt   DateTime? // When parent first paid (order or top-up)
+  firstPaidBy   Int?      // Parent ID who paid first (locks relationship)
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   deletedAt DateTime? // Soft delete
 
-  parent User     @relation(fields: [parentId], references: [id])
-  orders Order[]
+  parent        User           @relation(fields: [parentId], references: [id])
+  orders        Order[]
+  spendingLimit SpendingLimit?
   
   @@index([parentId])
   @@index([cardNumber])
+}
+
+// ============================================
+// SPENDING LIMITS (Parent Controls)
+// ============================================
+
+model SpendingLimit {
+  id           Int      @id @default(autoincrement())
+  studentId    Int      @unique
+  dailyLimit   Decimal? @db.Decimal(10, 2) // null = unlimited
+  weeklyLimit  Decimal? @db.Decimal(10, 2)
+  monthlyLimit Decimal? @db.Decimal(10, 2)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  updatedBy Int      // Parent ID who set/updated limits
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@index([studentId])
 }
 
 // ============================================
@@ -135,6 +161,10 @@ model Transaction {
   description   String?
   metadata      Json?
   
+  // Parent tracking for top-ups
+  performedBy   Int?            // Parent ID for top-ups
+  orderId       Int?            // Link to order if type = PURCHASE
+  
   createdAt DateTime @default(now())
 
   wallet Wallet @relation(fields: [walletId], references: [id])
@@ -142,6 +172,7 @@ model Transaction {
   @@index([walletId])
   @@index([type])
   @@index([createdAt])
+  @@index([performedBy])
 }
 
 enum TransactionType {
@@ -246,6 +277,7 @@ model Product {
   category   Category    @relation(fields: [categoryId], references: [id])
   supplier   Supplier?   @relation(fields: [supplierId], references: [id])
   orderItems OrderItem[]
+  inventoryTransactions InventoryTransaction[]
   
   @@index([slug])
   @@index([categoryId])
@@ -262,11 +294,17 @@ model Order {
   orderNumber   String      @unique
   userId        Int
   studentId     Int?
+  parentId      Int?        // Parent who paid or will pay
   status        OrderStatus @default(PENDING)
   paymentStatus PaymentStatus @default(PENDING)
   total         Decimal     @db.Decimal(10, 2)
   paymentMethod String      @default("WALLET")
   notes         String?
+  
+  // Approval flow for over-limit orders
+  needsApproval Boolean     @default(false)
+  approvedAt    DateTime?
+  approvedBy    Int?        // Parent ID who approved
   
   // Fulfillment
   preparedAt  DateTime?
@@ -284,8 +322,10 @@ model Order {
   
   @@index([userId])
   @@index([studentId])
+  @@index([parentId])
   @@index([status])
   @@index([paymentStatus])
+  @@index([needsApproval])
   @@index([createdAt])
   @@index([orderNumber])
 }
@@ -318,6 +358,32 @@ model OrderItem {
   
   @@index([orderId])
   @@index([productId])
+}
+
+// Parent Actions Log (Track first payment for relationship lock)
+model ParentAction {
+  id         Int      @id @default(autoincrement())
+  parentId   Int
+  studentId  Int
+  action     ParentActionType
+  amount     Decimal? @db.Decimal(10, 2)
+  orderId    Int?
+  metadata   Json?    // Extra data: limits set, products blocked, etc.
+  
+  createdAt DateTime @default(now())
+  
+  @@index([parentId, studentId, createdAt])
+  @@index([studentId])
+  @@index([action])
+}
+
+enum ParentActionType {
+  TOP_UP          // Parent topped up student wallet
+  PAY_ORDER       // Parent paid for student order
+  SET_LIMIT       // Parent set spending limit
+  UPDATE_LIMIT    // Parent updated limit
+  APPROVE_ORDER   // Parent approved over-limit order
+  REJECT_ORDER    // Parent rejected order
 }
 
 // ============================================
@@ -401,4 +467,33 @@ model School {
   deletedAt DateTime? // Soft delete
   
   @@index([isActive])
+}
+
+// ============================================
+// INVENTORY MANAGEMENT
+// ============================================
+
+model InventoryTransaction {
+  id          Int           @id @default(autoincrement())
+  productId   Int
+  quantity    Int           // Positive for IN/ADJUSTMENT, negative for OUT
+  type        InventoryType
+  reason      String?
+  performedBy Int
+  
+  createdAt DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation("InventoryPerformer", fields: [performedBy], references: [id])
+  
+  @@index([productId])
+  @@index([type])
+  @@index([performedBy])
+  @@index([createdAt])
+}
+
+enum InventoryType {
+  IN         // Stock in (nhập kho)
+  OUT        // Stock out (xuất kho)
+  ADJUSTMENT // Manual adjustment (điều chỉnh)
 }

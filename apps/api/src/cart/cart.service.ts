@@ -83,7 +83,10 @@ export class CartService {
     const cart = this.getCartItems(userId).map((i) =>
       i.productId === productId ? { ...i, quantity } : i,
     );
-    this.carts.set(userId, cart.filter((i) => i.quantity > 0));
+    this.carts.set(
+      userId,
+      cart.filter((i) => i.quantity > 0),
+    );
   }
 
   removeItem(userId: number, productId: number) {

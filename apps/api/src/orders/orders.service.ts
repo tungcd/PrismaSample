@@ -34,9 +34,7 @@ export class OrdersService {
     }
 
     if (!rawItems.length) {
-      throw new BadRequestException(
-        "Đơn hàng phải có ít nhất 1 sản phẩm",
-      );
+      throw new BadRequestException("Đơn hàng phải có ít nhất 1 sản phẩm");
     }
 
     // Validate products exist and are active
@@ -86,7 +84,9 @@ export class OrdersService {
     }
 
     // Generate order number
-    const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`;
+    const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0")}`;
 
     // Atomic transaction
     const order = await this.prisma.$transaction(async (tx) => {
@@ -213,7 +213,9 @@ export class OrdersService {
             },
           },
         },
-        student: { select: { id: true, name: true, grade: true, school: true } },
+        student: {
+          select: { id: true, name: true, grade: true, school: true },
+        },
         user: { select: { id: true, name: true, email: true } },
       },
     });
@@ -223,10 +225,7 @@ export class OrdersService {
     }
 
     // Non-staff can only view their own orders
-    if (
-      role === Role.PARENT ||
-      role === Role.STUDENT
-    ) {
+    if (role === Role.PARENT || role === Role.STUDENT) {
       if (order.userId !== userId) {
         throw new NotFoundException("Không tìm thấy đơn hàng");
       }

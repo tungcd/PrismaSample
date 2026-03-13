@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import {
+  DiscountType,
   OrderStatus,
   PaymentStatus,
   Role,
@@ -13,13 +14,27 @@ import { PrismaService } from "../prisma/prisma.service";
 import { CartService } from "../cart/cart.service";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { QueryOrdersDto } from "./dto/query-orders.dto";
+import { VouchersService } from "../vouchers/vouchers.service";
 
 @Injectable()
 export class OrdersService {
+  private appliedVouchers = new Map<number, string>();
+
   constructor(
     private prisma: PrismaService,
     private cartService: CartService,
+    private vouchersService: VouchersService,
   ) {}
+
+  private canManageAll(role: Role) {
+    return role === Role.ADMIN || role === Role.MANAGER || role === Role.STAFF;
+  }
+
+  private assertOrderAccess(orderUserId: number, userId: number, role: Role) {
+    if (!this.canManageAll(role) && orderUserId !== userId) {
+      throw new NotFoundException("Không tìm thấy đơn hàng");
+    }
+  }
 
   async createOrder(userId: number, dto: CreateOrderDto) {
     // Resolve items — from body or from in-memory cart
@@ -224,13 +239,198 @@ export class OrdersService {
       throw new NotFoundException("Không tìm thấy đơn hàng");
     }
 
-    // Non-staff can only view their own orders
-    if (role === Role.PARENT || role === Role.STUDENT) {
-      if (order.userId !== userId) {
-        throw new NotFoundException("Không tìm thấy đơn hàng");
-      }
-    }
+    this.assertOrderAccess(order.userId, userId, role);
 
     return order;
+  }
+
+  async cancelOrder(id: number, userId: number, role: Role) {
+    const order = await this.prisma.order.findFirst({
+      where: { id, deletedAt: null },
+    });
+
+    if (!order) {
+      throw new NotFoundException("Không tìm thấy đơn hàng");
+    }
+
+    this.assertOrderAccess(order.userId, userId, role);
+
+    if (
+      order.status !== OrderStatus.PENDING &&
+      order.status !== OrderStatus.CONFIRMED
+    ) {
+      throw new BadRequestException("Đơn hàng không thể hủy ở trạng thái hiện tại");
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const cancelled = await tx.order.update({
+        where: { id },
+        data: {
+          status: OrderStatus.CANCELLED,
+          cancelledAt: new Date(),
+          paymentStatus:
+            order.paymentStatus === PaymentStatus.PAID
+              ? PaymentStatus.REFUNDED
+              : order.paymentStatus,
+        },
+      });
+
+      if (order.paymentStatus === PaymentStatus.PAID) {
+        const wallet = await tx.wallet.findUnique({ where: { userId: order.userId } });
+        if (wallet) {
+          await tx.wallet.update({
+            where: { id: wallet.id },
+            data: { balance: { increment: Number(order.total) } },
+          });
+
+          await tx.transaction.create({
+            data: {
+              walletId: wallet.id,
+              type: TransactionType.REFUND,
+              amount: order.total,
+              balanceBefore: wallet.balance,
+              balanceAfter: Number(wallet.balance) + Number(order.total),
+              description: `Hoàn tiền đơn hàng ${order.orderNumber}`,
+              orderId: order.id,
+              performedBy: userId,
+            },
+          });
+        }
+      }
+
+      return cancelled;
+    });
+  }
+
+  async getTracking(id: number, userId: number, role: Role) {
+    const order = await this.findOne(id, userId, role);
+
+    const events = [
+      { status: "PENDING", at: order.createdAt, label: "Đơn hàng được tạo" },
+      order.approvedAt
+        ? {
+            status: "CONFIRMED",
+            at: order.approvedAt,
+            label: "Đơn hàng đã được xác nhận",
+          }
+        : null,
+      order.preparedAt
+        ? {
+            status: "PREPARING",
+            at: order.preparedAt,
+            label: "Đơn hàng đang được chuẩn bị",
+          }
+        : null,
+      order.readyAt
+        ? { status: "READY", at: order.readyAt, label: "Đơn hàng đã sẵn sàng" }
+        : null,
+      order.completedAt
+        ? {
+            status: "COMPLETED",
+            at: order.completedAt,
+            label: "Đơn hàng đã hoàn thành",
+          }
+        : null,
+      order.cancelledAt
+        ? {
+            status: "CANCELLED",
+            at: order.cancelledAt,
+            label: "Đơn hàng đã bị hủy",
+          }
+        : null,
+    ].filter(Boolean);
+
+    return {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      currentStatus: order.status,
+      paymentStatus: order.paymentStatus,
+      events,
+    };
+  }
+
+  async reorder(id: number, userId: number, role: Role) {
+    const oldOrder = await this.findOne(id, userId, role);
+
+    return this.createOrder(userId, {
+      studentId: oldOrder.studentId ?? undefined,
+      notes: `Reorder from ${oldOrder.orderNumber}`,
+      items: oldOrder.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      })),
+    });
+  }
+
+  private async getVoucherPreview(orderId: number, code: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, deletedAt: null },
+    });
+
+    if (!order) {
+      throw new NotFoundException("Không tìm thấy đơn hàng");
+    }
+
+    const amount = Number(order.total);
+    const validation = await this.vouchersService.validateCode(code, amount);
+
+    return {
+      orderId: order.id,
+      orderNumber: order.orderNumber,
+      originalTotal: amount,
+      voucherCode: code,
+      discountAmount: validation.discountAmount,
+      finalTotal: validation.finalAmount,
+      discountType: validation.voucher.discountType,
+      discountValue:
+        validation.voucher.discountType === DiscountType.PERCENTAGE
+          ? `${Number(validation.voucher.discount)}%`
+          : Number(validation.voucher.discount),
+    };
+  }
+
+  async applyVoucher(id: number, userId: number, role: Role, code: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id, deletedAt: null },
+    });
+
+    if (!order) {
+      throw new NotFoundException("Không tìm thấy đơn hàng");
+    }
+
+    this.assertOrderAccess(order.userId, userId, role);
+
+    if (order.paymentStatus !== PaymentStatus.PENDING) {
+      throw new BadRequestException(
+        "Chỉ có thể áp dụng voucher trước khi thanh toán",
+      );
+    }
+
+    const preview = await this.getVoucherPreview(id, code);
+    this.appliedVouchers.set(id, code);
+
+    return {
+      success: true,
+      message: "Áp dụng voucher thành công",
+      ...preview,
+    };
+  }
+
+  async removeVoucher(id: number, userId: number, role: Role) {
+    const order = await this.prisma.order.findFirst({
+      where: { id, deletedAt: null },
+    });
+
+    if (!order) {
+      throw new NotFoundException("Không tìm thấy đơn hàng");
+    }
+
+    this.assertOrderAccess(order.userId, userId, role);
+    this.appliedVouchers.delete(id);
+
+    return {
+      success: true,
+      message: "Đã gỡ voucher khỏi đơn hàng",
+    };
   }
 }

@@ -25,9 +25,17 @@ describe("OrdersService", () => {
     clearCart: jest.fn(),
   };
 
+  const vouchersService = {
+    validateCode: jest.fn(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new OrdersService(prisma as any, cartService as any);
+    service = new OrdersService(
+      prisma as any,
+      cartService as any,
+      vouchersService as any,
+    );
   });
 
   it("createOrder should throw when no items", async () => {

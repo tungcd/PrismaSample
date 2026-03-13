@@ -9,6 +9,10 @@ import { CategoriesModule } from "./categories/categories.module";
 import { ProductsModule } from "./products/products.module";
 import { CartModule } from "./cart/cart.module";
 import { OrdersModule } from "./orders/orders.module";
+import { WalletModule } from "./wallet/wallet.module";
+import { TopUpRequestsModule } from "./top-up-requests/top-up-requests.module";
+import { VouchersModule } from "./vouchers/vouchers.module";
+import { PromotionsModule } from "./promotions/promotions.module";
 
 @Module({
   imports: [
@@ -29,6 +33,10 @@ import { OrdersModule } from "./orders/orders.module";
     ProductsModule,
     CartModule,
     OrdersModule,
+    WalletModule,
+    TopUpRequestsModule,
+    VouchersModule,
+    PromotionsModule,
   ],
 })
 export class AppModule {}

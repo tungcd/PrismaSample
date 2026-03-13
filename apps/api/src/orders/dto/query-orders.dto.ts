@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsEnum, IsInt, IsOptional, Min } from "class-validator";
+import { IsDateString, IsEnum, IsInt, IsOptional, Min } from "class-validator";
 import { OrderStatus } from "@prisma/client";
 
 export class QueryOrdersDto {
@@ -11,6 +11,14 @@ export class QueryOrdersDto {
   @Type(() => Number)
   @IsInt()
   studentId?: number;
+
+  @IsOptional()
+  @IsDateString()
+  fromDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  toDate?: string;
 
   @IsOptional()
   @Type(() => Number)

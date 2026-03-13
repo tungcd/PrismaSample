@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -16,6 +17,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { CreateStudentDto } from "./dto/create-student.dto";
 import { UpdateStudentDto } from "./dto/update-student.dto";
 import { StudentsService } from "./students.service";
+import { LinkCardDto } from "./dto/link-card.dto";
 
 @Controller("students")
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -48,5 +50,46 @@ export class StudentsController {
     @Body() dto: UpdateStudentDto,
   ) {
     return this.studentsService.update(user, id, dto);
+  }
+
+  @Delete(":id")
+  async deleteStudent(
+    @CurrentUser() user: any,
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    return this.studentsService.remove(user, id);
+  }
+
+  @Post(":id/link-card")
+  async linkCard(
+    @CurrentUser() user: any,
+    @Param("id", ParseIntPipe) id: number,
+    @Body() dto: LinkCardDto,
+  ) {
+    return this.studentsService.linkCard(user, id, dto.cardNumber);
+  }
+
+  @Delete(":id/link-card")
+  async unlinkCard(
+    @CurrentUser() user: any,
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    return this.studentsService.unlinkCard(user, id);
+  }
+
+  @Get(":id/orders")
+  async getStudentOrders(
+    @CurrentUser() user: any,
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    return this.studentsService.getStudentOrders(user, id);
+  }
+
+  @Get(":id/spending-summary")
+  async getStudentSpendingSummary(
+    @CurrentUser() user: any,
+    @Param("id", ParseIntPipe) id: number,
+  ) {
+    return this.studentsService.getStudentSpendingSummary(user, id);
   }
 }

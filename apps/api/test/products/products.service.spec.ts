@@ -1,5 +1,5 @@
 import { NotFoundException } from "@nestjs/common";
-import { ProductsService } from "./products.service";
+import { ProductsService } from "../../src/products/products.service";
 
 describe("ProductsService", () => {
   let service: ProductsService;

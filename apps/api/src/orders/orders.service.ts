@@ -170,7 +170,7 @@ export class OrdersService {
   }
 
   async findAll(userId: number, role: Role, query: QueryOrdersDto) {
-    const { page = 1, limit = 20, status, studentId } = query;
+    const { page = 1, limit = 20, status, studentId, fromDate, toDate } = query;
     const skip = (page - 1) * limit;
 
     const where: Record<string, any> = { deletedAt: null };
@@ -182,6 +182,11 @@ export class OrdersService {
 
     if (status) where.status = status;
     if (studentId) where.studentId = studentId;
+    if (fromDate || toDate) {
+      where.createdAt = {};
+      if (fromDate) where.createdAt.gte = new Date(fromDate);
+      if (toDate) where.createdAt.lte = new Date(toDate);
+    }
 
     const [total, data] = await Promise.all([
       this.prisma.order.count({ where }),

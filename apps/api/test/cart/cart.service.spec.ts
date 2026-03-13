@@ -1,4 +1,4 @@
-import { CartService } from "./cart.service";
+import { CartService } from "../../src/cart/cart.service";
 
 describe("CartService", () => {
   let service: CartService;

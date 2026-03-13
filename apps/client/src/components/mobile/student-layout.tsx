@@ -18,12 +18,14 @@ export function StudentLayout({
   showBottomNav = true,
 }: StudentLayoutProps) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <MobileHeader title={title} showBack={showBack} />
+    <div className="flex min-h-screen justify-center bg-gray-50">
+      <div className="flex min-h-screen flex-col w-full max-w-[450px] bg-white">
+        <MobileHeader title={title} showBack={showBack} />
 
-      <main className="flex-1 pb-20">{children}</main>
+        <main className="flex-1 pb-20">{children}</main>
 
-      {showBottomNav && <StudentBottomNav />}
+        {showBottomNav && <StudentBottomNav />}
+      </div>
     </div>
   );
 }

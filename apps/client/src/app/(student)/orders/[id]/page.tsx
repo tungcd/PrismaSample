@@ -331,7 +331,7 @@ export default function OrderDetailPage({
         <CardContent className="space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Tạm tính</span>
-            <span>{formatCurrency(order.subtotal)}</span>
+            <span>{formatCurrency(order.total)}</span>
           </div>
           {order.discount > 0 && (
             <div className="flex justify-between text-sm text-green-600">

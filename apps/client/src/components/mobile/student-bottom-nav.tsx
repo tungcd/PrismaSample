@@ -39,7 +39,7 @@ export function StudentBottomNav() {
   const cartItemCount = useCartStore((state) => state.getItemCount());
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background">
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[450px] z-50 border-t bg-background">
       <div className="grid h-16 grid-cols-5">
         {studentTabs.map((tab) => {
           const isActive = pathname === tab.href;

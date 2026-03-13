@@ -26,7 +26,19 @@ export function Providers({ children }: ProvidersProps) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
-      <Toaster position="top-center" richColors />
+      <Toaster
+        position="top-center"
+        richColors
+        toastOptions={{
+          unstyled: false,
+          classNames: {
+            error: "error-toast",
+            success: "success-toast",
+            warning: "warning-toast",
+            info: "info-toast",
+          },
+        }}
+      />
     </QueryClientProvider>
   );
 }

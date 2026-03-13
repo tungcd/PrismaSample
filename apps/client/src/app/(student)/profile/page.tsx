@@ -136,14 +136,18 @@ export default function ProfilePage() {
         <CardContent className="space-y-2">
           <Button variant="outline" className="w-full justify-start" asChild>
             <Link href="/profile/edit">
-              <User className="h-4 w-4 mr-2" />
-              Chỉnh sửa thông tin
+              <div className="flex items-center justify-center">
+                <User className="h-4 w-4 mr-2" />
+                Chỉnh sửa thông tin
+              </div>
             </Link>
           </Button>
           <Button variant="outline" className="w-full justify-start" asChild>
             <Link href="/profile/change-password">
-              <Shield className="h-4 w-4 mr-2" />
-              Đổi mật khẩu
+              <div className="flex items-center justify-center">
+                <Shield className="h-4 w-4 mr-2" />
+                Đổi mật khẩu
+              </div>
             </Link>
           </Button>
         </CardContent>

@@ -132,7 +132,7 @@ export default function CartPage() {
                     {item.product.name}
                   </h3>
                   <p className="text-sm font-semibold text-primary">
-                    {item.product.price}
+                    {formatCurrency(item.product.price)}
                   </p>
                 </div>
 

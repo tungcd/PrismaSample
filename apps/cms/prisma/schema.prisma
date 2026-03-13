@@ -258,6 +258,7 @@ model Product {
   description String?
   price       Decimal  @db.Decimal(10, 2)
   stock       Int      @default(0)
+  lowStockThreshold Int? // Threshold for low stock alerts
   images      String[]
   categoryId  Int
   supplierId  Int?

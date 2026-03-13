@@ -259,7 +259,9 @@ export class OrdersService {
       order.status !== OrderStatus.PENDING &&
       order.status !== OrderStatus.CONFIRMED
     ) {
-      throw new BadRequestException("Đơn hàng không thể hủy ở trạng thái hiện tại");
+      throw new BadRequestException(
+        "Đơn hàng không thể hủy ở trạng thái hiện tại",
+      );
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -276,7 +278,9 @@ export class OrdersService {
       });
 
       if (order.paymentStatus === PaymentStatus.PAID) {
-        const wallet = await tx.wallet.findUnique({ where: { userId: order.userId } });
+        const wallet = await tx.wallet.findUnique({
+          where: { userId: order.userId },
+        });
         if (wallet) {
           await tx.wallet.update({
             where: { id: wallet.id },

@@ -35,7 +35,10 @@ export class VouchersService {
       throw new BadRequestException("Voucher không hợp lệ hoặc đã hết hạn");
     }
 
-    if (voucher.usageLimit !== null && voucher.usageCount >= voucher.usageLimit) {
+    if (
+      voucher.usageLimit !== null &&
+      voucher.usageCount >= voucher.usageLimit
+    ) {
       throw new BadRequestException("Voucher đã hết lượt sử dụng");
     }
 

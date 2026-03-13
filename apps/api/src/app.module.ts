@@ -13,6 +13,10 @@ import { WalletModule } from "./wallet/wallet.module";
 import { TopUpRequestsModule } from "./top-up-requests/top-up-requests.module";
 import { VouchersModule } from "./vouchers/vouchers.module";
 import { PromotionsModule } from "./promotions/promotions.module";
+import { NotificationsModule } from "./notifications/notifications.module";
+import { ReportsModule } from "./reports/reports.module";
+import { HealthModule } from "./health/health.module";
+import { ClientConfigModule } from "./client-config/client-config.module";
 
 @Module({
   imports: [
@@ -37,6 +41,10 @@ import { PromotionsModule } from "./promotions/promotions.module";
     TopUpRequestsModule,
     VouchersModule,
     PromotionsModule,
+    NotificationsModule,
+    ReportsModule,
+    HealthModule,
+    ClientConfigModule,
   ],
 })
 export class AppModule {}

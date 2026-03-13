@@ -35,7 +35,9 @@ export class TopUpRequestsService {
   }
 
   async findOne(id: number, userId: number, role: Role) {
-    const request = await this.prisma.topUpRequest.findUnique({ where: { id } });
+    const request = await this.prisma.topUpRequest.findUnique({
+      where: { id },
+    });
     if (!request) {
       throw new NotFoundException("Không tìm thấy yêu cầu nạp tiền");
     }
@@ -53,7 +55,9 @@ export class TopUpRequestsService {
   }
 
   async cancel(id: number, userId: number) {
-    const request = await this.prisma.topUpRequest.findUnique({ where: { id } });
+    const request = await this.prisma.topUpRequest.findUnique({
+      where: { id },
+    });
     if (!request || request.userId !== userId) {
       throw new NotFoundException("Không tìm thấy yêu cầu nạp tiền");
     }

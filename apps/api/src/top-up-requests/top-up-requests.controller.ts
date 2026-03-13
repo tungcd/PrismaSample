@@ -38,7 +38,10 @@ export class TopUpRequestsController {
   }
 
   @Patch(":id/cancel")
-  async cancel(@CurrentUser() user: any, @Param("id", ParseIntPipe) id: number) {
+  async cancel(
+    @CurrentUser() user: any,
+    @Param("id", ParseIntPipe) id: number,
+  ) {
     return this.topUpRequestsService.cancel(id, user.id);
   }
 }

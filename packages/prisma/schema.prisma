@@ -163,9 +163,12 @@ model VerificationToken {
 model Student {
   id         Int      @id @default(autoincrement())
   name       String
+  birthday   DateTime @default(now()) // Date of birth (used to generate default PIN)
   grade      String
   school     String
   cardNumber String?  @unique
+  studentCode String? @unique // Student ID from school (for login)
+  pinHash    String?  // Hashed PIN for app authentication (default: DDMMYYYY from birthday)
   avatar     String?  // Base64 encoded image
   isActive   Boolean  @default(true)
   parentId   Int
@@ -184,6 +187,8 @@ model Student {
   
   @@index([parentId])
   @@index([cardNumber])
+  @@index([studentCode])
+  @@index([birthday])
 }
 
 // ============================================

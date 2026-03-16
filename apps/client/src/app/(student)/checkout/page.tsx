@@ -181,7 +181,7 @@ export default function CheckoutPage() {
         </CardHeader>
         <CardContent className="space-y-3">
           {cart.items.map((item: any) => (
-            <div key={item.id} className="flex gap-3">
+            <div key={item.productId} className="flex gap-3">
               <div className="relative w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                 {item.product.image ? (
                   <img

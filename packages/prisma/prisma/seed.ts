@@ -12,6 +12,23 @@ function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+// Helper function to generate default PIN from birthday (DDMMYYYY format)
+function generateDefaultPIN(birthday: Date): string {
+  const day = birthday.getDate().toString().padStart(2, "0");
+  const month = (birthday.getMonth() + 1).toString().padStart(2, "0");
+  const year = birthday.getFullYear().toString();
+  return `${day}${month}${year}`;
+}
+
+// Helper function to generate random birthday for students (age 11-18)
+function randomBirthday(): Date {
+  const currentYear = 2026;
+  const birthYear = randomInt(currentYear - 18, currentYear - 11); // 2008-2015
+  const month = randomInt(1, 12);
+  const day = randomInt(1, 28); // Safe for all months
+  return new Date(birthYear, month - 1, day);
+}
+
 async function main() {
   console.log("🌱 Starting database seed...");
 
@@ -293,9 +310,18 @@ async function main() {
     const school = randomItem(schools);
     const parent = randomItem(parents);
 
+    // Generate birthday and PIN
+    const birthday = randomBirthday();
+    const defaultPIN = generateDefaultPIN(birthday);
+    const pinHash = await bcrypt.hash(defaultPIN, 10);
+    const studentCode = `HS${String(i).padStart(6, "0")}`; // HS000001, HS000002, ...
+
     const student = await prisma.student.create({
       data: {
         name: fullName,
+        birthday: birthday,
+        studentCode: studentCode,
+        pinHash: pinHash,
         grade: grade,
         school: school.name,
         cardNumber: `SC${String(i).padStart(6, "0")}`, // SC000001, SC000002, ...
@@ -304,6 +330,13 @@ async function main() {
       },
     });
     students.push(student);
+
+    // Log first 5 students with their login credentials
+    if (i <= 5) {
+      console.log(
+        `   📝 ${fullName} - Code: ${studentCode} - PIN: ${defaultPIN} (Birth: ${birthday.toLocaleDateString("vi-VN")})`,
+      );
+    }
   }
 
   console.log(`✅ Created ${students.length} students`);

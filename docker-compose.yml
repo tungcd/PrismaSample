@@ -46,8 +46,8 @@ services:
     image: node:18-alpine
     container_name: smart-canteen-cms
     restart: "no"
-    working_dir: /app/apps/cms
-    command: sh -c "apk add --no-cache python3 make g++ openssl-dev openssl && npm install && npx prisma generate && npm run dev"
+    working_dir: /app
+    command: sh -c "apk add --no-cache python3 make g++ openssl-dev openssl && npm install -g pnpm@8.15.0 && pnpm install && cd packages/prisma && pnpm generate && cd /app && pnpm --filter=@smart-canteen/cms dev"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://admin:secure_password@postgres:5432/smart_canteen?schema=public
@@ -59,8 +59,10 @@ services:
     ports:
       - '3000:3000'
     volumes:
-      - ./apps/cms:/app/apps/cms
-      - cms_node_modules:/app/apps/cms/node_modules
+      - ./:/app
+      - /app/node_modules
+      - /app/apps/cms/node_modules
+      - /app/packages/prisma/node_modules
     depends_on:
       postgres:
         condition: service_healthy
@@ -74,8 +76,8 @@ services:
     image: node:18-alpine
     container_name: smart-canteen-client
     restart: "no"
-    working_dir: /app/apps/client
-    command: sh -c "apk add --no-cache python3 make g++ openssl-dev openssl && npm install && npx prisma generate && npm run dev"
+    working_dir: /app
+    command: sh -c "apk add --no-cache python3 make g++ openssl-dev openssl && npm install -g pnpm@8.15.0 && pnpm install && cd packages/prisma && pnpm generate && cd /app && pnpm --filter=@smart-canteen/client dev"
     environment:
       - NODE_ENV=development
       - DATABASE_URL=postgresql://admin:secure_password@postgres:5432/smart_canteen?schema=public
@@ -87,8 +89,10 @@ services:
     ports:
       - '3001:3001'
     volumes:
-      - ./apps/client:/app/apps/client
-      - client_node_modules:/app/apps/client/node_modules
+      - ./:/app
+      - /app/node_modules
+      - /app/apps/client/node_modules
+      - /app/packages/prisma/node_modules
     depends_on:
       postgres:
         condition: service_healthy
@@ -102,8 +106,8 @@ services:
     image: node:18-alpine
     container_name: smart-canteen-api
     restart: "no"
-    working_dir: /app/apps/api
-    command: sh -c "apk add --no-cache python3 make g++ openssl-dev openssl && npm install && npx prisma generate && npm run dev"
+    working_dir: /app
+    command: sh -c "apk add --no-cache python3 make g++ openssl-dev openssl && npm install -g pnpm@8.15.0 && pnpm install && cd packages/prisma && pnpm generate && cd /app && pnpm --filter=@smart-canteen/api dev"
     environment:
       - NODE_ENV=development
       - PORT=4000
@@ -113,12 +117,13 @@ services:
       - JWT_EXPIRES_IN=7d
       - CORS_ORIGINS=http://localhost:3000,http://localhost:3001
       - NO_COLOR=true
-      - PRISMA_QUERY_ENGINE_LIBRARY=/app/apps/api/node_modules/.prisma/client/libquery_engine-linux-musl-openssl-3.0.x.so.node
     ports:
       - '4000:4000'
     volumes:
-      - ./apps/api:/app/apps/api
-      - api_node_modules:/app/apps/api/node_modules
+      - ./:/app
+      - /app/node_modules
+      - /app/apps/api/node_modules
+      - /app/packages/prisma/node_modules
     depends_on:
       postgres:
         condition: service_healthy
@@ -131,12 +136,6 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
-    driver: local
-  cms_node_modules:
-    driver: local
-  client_node_modules:
-    driver: local
-  api_node_modules:
     driver: local
 
 networks:

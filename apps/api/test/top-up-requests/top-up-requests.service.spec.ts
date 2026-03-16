@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
-import { Role, TopUpStatus } from "@prisma/client";
+import { Role, TopUpStatus } from "@smart-canteen/prisma";
 import { TopUpRequestsService } from "../../src/top-up-requests/top-up-requests.service";
 
 describe("TopUpRequestsService", () => {

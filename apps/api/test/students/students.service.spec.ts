@@ -1,5 +1,5 @@
 import { BadRequestException, ForbiddenException } from "@nestjs/common";
-import { Role } from "@prisma/client";
+import { Role } from "@smart-canteen/prisma";
 import { StudentsService } from "../../src/students/students.service";
 
 describe("StudentsService", () => {

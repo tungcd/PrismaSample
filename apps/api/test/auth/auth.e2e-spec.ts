@@ -4,7 +4,7 @@ import * as request from "supertest";
 import { AppModule } from "../../src/app.module";
 import { PrismaService } from "../../src/prisma/prisma.service";
 import * as bcrypt from "bcrypt";
-import { Role } from "@prisma/client";
+import { Role } from "@smart-canteen/prisma";
 
 describe("AuthController (e2e)", () => {
   let app: INestApplication;

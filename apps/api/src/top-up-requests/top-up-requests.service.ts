@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { Role, TopUpStatus } from "@prisma/client";
+import { Role, TopUpStatus } from "@smart-canteen/prisma";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateTopUpRequestDto } from "./dto/create-top-up-request.dto";
 

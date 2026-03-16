@@ -9,7 +9,7 @@ import {
   PaymentStatus,
   Role,
   TransactionType,
-} from "@prisma/client";
+} from "@smart-canteen/prisma";
 import { PrismaService } from "../prisma/prisma.service";
 import { CartService } from "../cart/cart.service";
 import { CreateOrderDto } from "./dto/create-order.dto";

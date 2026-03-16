@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { User } from "@/lib/auth-client";
-import { Role } from "../../../prisma/generated/client";
+import { Role } from "@smart-canteen/prisma";
 type NavigationItem = {
   name: string;
   href: string;

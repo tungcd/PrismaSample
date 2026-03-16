@@ -1,6 +1,6 @@
 import { Type } from "class-transformer";
 import { IsDateString, IsEnum, IsInt, IsOptional, Min } from "class-validator";
-import { OrderStatus } from "@prisma/client";
+import { OrderStatus } from "@smart-canteen/prisma";
 
 export class QueryOrdersDto {
   @IsOptional()

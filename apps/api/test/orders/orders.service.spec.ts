@@ -1,5 +1,5 @@
 import { BadRequestException, NotFoundException } from "@nestjs/common";
-import { Role } from "@prisma/client";
+import { Role } from "@smart-canteen/prisma";
 import { OrdersService } from "../../src/orders/orders.service";
 
 describe("OrdersService", () => {

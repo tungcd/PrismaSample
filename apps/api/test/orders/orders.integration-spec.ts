@@ -10,7 +10,7 @@ import {
   TransactionType,
   ProductStatus,
   DiscountType,
-} from "@prisma/client";
+} from "@smart-canteen/prisma";
 
 describe("OrdersController (integration)", () => {
   let app: INestApplication;

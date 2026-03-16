@@ -1,5 +1,5 @@
 import { BadRequestException } from "@nestjs/common";
-import { DiscountType } from "@prisma/client";
+import { DiscountType } from "@smart-canteen/prisma";
 import { VouchersService } from "../../src/vouchers/vouchers.service";
 
 describe("VouchersService", () => {

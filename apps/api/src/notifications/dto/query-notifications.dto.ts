@@ -1,6 +1,6 @@
 import { Type } from "class-transformer";
 import { IsBoolean, IsEnum, IsInt, IsOptional, Min } from "class-validator";
-import { NotificationType } from "@prisma/client";
+import { NotificationType } from "@smart-canteen/prisma";
 
 export class QueryNotificationsDto {
   @IsOptional()

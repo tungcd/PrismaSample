@@ -4,7 +4,7 @@ import { RolesGuard } from "../auth/guards/roles.guard";
 import { Roles } from "../auth/decorators/roles.decorator";
 import { CurrentUser } from "../auth/decorators/current-user.decorator";
 import { UsersService } from "./users.service";
-import { Role } from "@prisma/client";
+import { Role } from "@smart-canteen/prisma";
 import { UpdateProfileDto } from "./dto/update-profile.dto";
 import { ChangePasswordDto } from "./dto/change-password.dto";
 import { UpdateNotificationSettingsDto } from "./dto/update-notification-settings.dto";

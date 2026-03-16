@@ -1,4 +1,4 @@
-import { Role } from "@prisma/client";
+import { Role } from "@smart-canteen/prisma";
 import { TopUpRequestsController } from "../../src/top-up-requests/top-up-requests.controller";
 import { TopUpRequestsService } from "../../src/top-up-requests/top-up-requests.service";
 

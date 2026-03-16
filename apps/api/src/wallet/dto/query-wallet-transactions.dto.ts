@@ -1,6 +1,6 @@
 import { Type } from "class-transformer";
 import { IsDateString, IsEnum, IsInt, IsOptional, Min } from "class-validator";
-import { TransactionType } from "@prisma/client";
+import { TransactionType } from "@smart-canteen/prisma";
 
 export class QueryWalletTransactionsDto {
   @IsOptional()

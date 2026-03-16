@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { DiscountType } from "@prisma/client";
+import { DiscountType } from "@smart-canteen/prisma";
 import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()

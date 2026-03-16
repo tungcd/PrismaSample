@@ -1,4 +1,4 @@
-import { Role } from "@prisma/client";
+import { Role } from "@smart-canteen/prisma";
 import { StudentsController } from "../../src/students/students.controller";
 import { StudentsService } from "../../src/students/students.service";
 

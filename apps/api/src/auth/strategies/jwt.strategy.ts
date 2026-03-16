@@ -2,7 +2,7 @@ import { ExtractJwt, Strategy } from "passport-jwt";
 import { PassportStrategy } from "@nestjs/passport";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { Role } from "@prisma/client";
+import { Role } from "@smart-canteen/prisma";
 
 export interface JwtPayload {
   sub: number; // ✅ Changed from string to number (March 2026)

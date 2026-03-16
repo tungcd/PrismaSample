@@ -354,7 +354,7 @@ export default function CheckoutPage() {
       )}
 
       {/* Sticky Bottom Summary */}
-      <div className="fixed bottom-16 left-0 right-0 bg-white border-t shadow-lg z-10 max-w-[]2xl mx-auto px-4 py-3">
+      <div className="fixed bottom-16 left-0 right-0 bg-white border-t shadow-lg z-10 max-w-[450px] mx-auto px-4 py-3">
         <div className="container max-w-2xl p-4">
           <Card>
             <CardContent className="pt-4 space-y-2">

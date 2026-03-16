@@ -2,6 +2,10 @@
   "name": "smart-canteen",
   "version": "1.0.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
@@ -9,12 +13,12 @@
     "lint": "turbo run lint",
     "clean": "turbo run clean && rm -rf node_modules",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
-    "db:generate": "pnpm --filter=@smart-canteen/prisma prisma generate",
-    "db:push": "pnpm --filter=@smart-canteen/prisma prisma db push",
-    "db:migrate": "pnpm --filter=@smart-canteen/prisma prisma migrate dev",
-    "db:studio": "pnpm --filter=@smart-canteen/prisma prisma studio",
-    "db:seed": "pnpm --filter=@smart-canteen/prisma tsx prisma/seed.ts",
-    "db:reset": "pnpm --filter=@smart-canteen/prisma prisma migrate reset"
+    "db:generate": "npm -w @smart-canteen/prisma run prisma generate",
+    "db:push": "npm -w @smart-canteen/prisma run prisma db push",
+    "db:migrate": "npm -w @smart-canteen/prisma run prisma migrate dev",
+    "db:studio": "npm -w @smart-canteen/prisma run prisma studio",
+    "db:seed": "npm -w @smart-canteen/prisma run seed",
+    "db:reset": "npm -w @smart-canteen/prisma run prisma migrate reset"
   },
   "devDependencies": {
     "@types/node": "^20.10.0",
@@ -26,7 +30,6 @@
   },
   "engines": {
     "node": ">=18.0.0",
-    "pnpm": ">=8.0.0"
-  },
-  "packageManager": "pnpm@8.15.0"
+    "npm": ">=9.0.0"
+  }
 }

@@ -4,25 +4,19 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm@8.15.0
-
-# Copy workspace configuration
-COPY pnpm-workspace.yaml* ./
-
 # Copy all package.json files first
-COPY package.json pnpm-lock.yaml* ./
+COPY package.json package-lock.json* ./
 COPY apps/api/package.json ./apps/api/
 COPY packages/prisma/package.json ./packages/prisma/
 
 # Install dependencies
-RUN pnpm install
+RUN npm install
 
 # Copy prisma schema
 COPY packages/prisma ./packages/prisma
 
 # Generate Prisma Client
-RUN pnpm --filter @smart-canteen/prisma prisma generate
+RUN npm -w @smart-canteen/prisma run generate
 
 # Copy rest of source code
 COPY apps/api ./apps/api
@@ -31,4 +25,4 @@ WORKDIR /app/apps/api
 
 EXPOSE 4000
 
-CMD ["pnpm", "dev"]
+CMD ["npm", "run", "dev"]

@@ -5,31 +5,26 @@ FROM node:18-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-# Install pnpm
-RUN npm install -g pnpm@8.15.0
-
 # Copy package files
-COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
+COPY package.json package-lock.json* ./
 COPY apps/client/package.json ./apps/client/
 COPY packages/prisma/package.json ./packages/prisma/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN npm ci
 
 # Stage 2: Builder
 FROM node:18-alpine AS builder
 WORKDIR /app
 
-RUN npm install -g pnpm@8.15.0
-
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 # Generate Prisma Client
-RUN cd packages/prisma && pnpm prisma generate
+RUN npm -w @smart-canteen/prisma run generate
 
 # Build Client app
-RUN pnpm --filter=@smart-canteen/client build
+RUN npm -w @smart-canteen/client run build
 
 # Stage 3: Runner
 FROM node:18-alpine AS runner

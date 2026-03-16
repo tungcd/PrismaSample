@@ -12,6 +12,75 @@ datasource db {
 }
 
 // ============================================
+// CHAT SYSTEM (Must be defined before User model)
+// ============================================
+
+model Conversation {
+  id          Int              @id @default(autoincrement())
+  type        ConversationType @default(SUPPORT)
+  title       String?          // Optional conversation title
+  isActive    Boolean          @default(true)
+  
+  // Participants
+  userId      Int              // Parent/Student
+  adminId     Int?             // Admin/Manager/Staff (if assigned)
+  
+  // Metadata
+  lastMessageAt      DateTime?
+  lastMessagePreview String?   // Last 100 chars
+  unreadCountUser    Int       @default(0) // Unread by user
+  unreadCountAdmin   Int       @default(0) // Unread by admin
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  closedAt  DateTime? // When conversation was closed
+  
+  user     User      @relation("UserConversations", fields: [userId], references: [id])
+  admin    User?     @relation("AdminConversations", fields: [adminId], references: [id])
+  messages Message[]
+  
+  @@index([userId, isActive])
+  @@index([adminId, isActive])
+  @@index([lastMessageAt])
+}
+
+enum ConversationType {
+  SUPPORT      // General support
+  ORDER_QUERY  // About specific order
+  PAYMENT      // Payment issues
+  PRODUCT      // Product questions
+  COMPLAINT    // Complaints
+  FEEDBACK     // Feedback
+}
+
+model Message {
+  id             Int      @id @default(autoincrement())
+  conversationId Int
+  senderId       Int      // Who sent (user or admin)
+  content        String   @db.Text
+  attachments    String[] // Image URLs
+  
+  // Status tracking
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  deliveredAt DateTime?
+  
+  // Metadata
+  isSystemMessage Boolean @default(false) // "Admin joined", "Order #123 link"
+  metadata        Json?   // Extra data
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft delete
+  
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id])
+  
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+// ============================================
 // USER MANAGEMENT & AUTHENTICATION
 // ============================================
 
@@ -48,6 +117,11 @@ model User {
   approvedTopUps  TopUpRequest[]  @relation("TopUpApprover")
   sessions        Session[]
   inventoryTransactions InventoryTransaction[] @relation("InventoryPerformer")
+  
+  // Chat relations
+  conversationsAsUser  Conversation[] @relation("UserConversations")
+  conversationsAsAdmin Conversation[] @relation("AdminConversations")
+  messages             Message[]
   
   @@index([email])
   @@index([phone])
@@ -389,7 +463,7 @@ enum ParentActionType {
 
 // ============================================
 // NOTIFICATIONS
-//============================================
+// ============================================
 
 model Notification {
   id        Int      @id @default(autoincrement())
@@ -400,13 +474,25 @@ model Notification {
   isRead    Boolean  @default(false)
   metadata  Json?
   
+  // Real-time tracking
+  deliveredAt    DateTime?
+  readAt         DateTime?
+  deliveryStatus DeliveryStatus @default(PENDING)
+  
+  // Categorization & Actions
+  priority  NotificationPriority @default(NORMAL)
+  actionUrl String?  // Link to relevant page (e.g., /orders/123)
+  
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  @@index([userId])
-  @@index([isRead])
-  @@index([createdAt])
+  @@index([userId, isRead])
+  @@index([userId, deliveryStatus])
+  @@index([userId, createdAt])
+  @@index([type])
+  @@index([priority])
 }
 
 enum NotificationType {
@@ -414,9 +500,34 @@ enum NotificationType {
   SUCCESS
   WARNING
   ERROR
-  ORDER
-  PAYMENT
-  TOPUP
+  ORDER_CONFIRMED
+  ORDER_READY
+  ORDER_COMPLETED
+  ORDER_CANCELLED
+  PAYMENT_SUCCESS
+  PAYMENT_FAILED
+  TOP_UP_APPROVED
+  TOP_UP_REJECTED
+  LOW_BALANCE
+  SPENDING_LIMIT
+  PRODUCT_AVAILABLE
+  PROMOTION
+  SYSTEM_ANNOUNCEMENT
+  CHAT_MESSAGE
+}
+
+enum DeliveryStatus {
+  PENDING      // Created but not sent
+  DELIVERED    // Pushed via socket
+  FAILED       // Failed to deliver
+  READ         // User read it
+}
+
+enum NotificationPriority {
+  LOW          // Can be batched
+  NORMAL       // Standard delivery
+  HIGH         // Show immediately
+  URGENT       // Alert + sound
 }
 
 // ============================================

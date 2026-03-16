@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { getUser, logout } from "@/lib/auth-client";
+import { getUser, logout, getToken } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,7 @@ import {
 import { useState, useEffect } from "react";
 import type { User } from "@/lib/auth-client";
 import { Role } from "@smart-canteen/prisma";
+import { NotificationBell } from "@/components/notification-bell";
 type NavigationItem = {
   name: string;
   href: string;
@@ -129,10 +130,12 @@ const navigation: NavigationItem[] = [
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     setUser(getUser());
+    setToken(getToken());
   }, []);
 
   const userRole = user?.role as Role;
@@ -226,7 +229,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
           >
             <Menu className="h-6 w-6" />
           </Button>
-          <h1 className="text-lg font-semibold">Smart Canteen</h1>
+          <h1 className="text-lg font-semibold flex-1">Smart Canteen</h1>
+          {token && <NotificationBell token={token} />}
+        </header>
+
+        {/* Desktop header with notification */}
+        <header className="hidden lg:flex sticky top-0 z-30 h-16 items-center justify-end gap-4 border-b bg-background px-8">
+          {token && <NotificationBell token={token} />}
         </header>
 
         {/* Page content */}

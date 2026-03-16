@@ -1,22 +1,28 @@
 "use client";
 
-import { Bell } from "lucide-react";
-import Link from "next/link";
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useState } from "react";
+import { NotificationBell } from "@/components/notification-bell";
+import { getToken } from "@/lib/auth-client";
 
 interface MobileHeaderProps {
   title?: string;
   showBack?: boolean;
   rightAction?: ReactNode;
-  notificationCount?: number;
 }
 
 export function MobileHeader({
   title,
   showBack = false,
   rightAction,
-  notificationCount = 0,
 }: MobileHeaderProps) {
+  const [mounted, setMounted] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    setToken(getToken());
+  }, []);
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center px-4">
@@ -37,16 +43,8 @@ export function MobileHeader({
 
         {/* Right Side */}
         <div className="flex items-center gap-2">
-          {rightAction || (
-            <Link href="/notifications" className="relative p-2">
-              <Bell className="h-5 w-5" />
-              {notificationCount > 0 && (
-                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white">
-                  {notificationCount > 9 ? "9+" : notificationCount}
-                </span>
-              )}
-            </Link>
-          )}
+          {rightAction ||
+            (mounted && token && <NotificationBell token={token} />)}
         </div>
       </div>
     </header>

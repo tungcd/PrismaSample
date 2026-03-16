@@ -6,7 +6,7 @@ import {
   FindCategoriesParams,
 } from "@/domain/repositories/category.repository.interface";
 import { CategoryEntity } from "@/domain/entities/category.entity";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@smart-canteen/prisma";
 
 export class PrismaCategoryRepository implements ICategoryRepository {
   async findMany(

@@ -6,7 +6,7 @@ import {
 } from "@/domain/repositories/school.repository.interface";
 import { prisma } from "../prisma-client";
 import { SchoolEntity } from "@/domain/entities/school.entity";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@smart-canteen/prisma";
 
 export class PrismaSchoolRepository implements ISchoolRepository {
   async findMany(

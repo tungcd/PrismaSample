@@ -6,7 +6,7 @@ import {
 } from "@/domain/repositories/product.repository.interface";
 import { prisma } from "../prisma-client";
 import { ProductEntity } from "@/domain/entities/product.entity";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@smart-canteen/prisma";
 
 export class PrismaProductRepository implements IProductRepository {
   async findMany(

@@ -4,7 +4,7 @@ import {
   FindTransactionsParams,
 } from "@/domain/repositories/transaction.repository.interface";
 import { TransactionEntity } from "@/domain/entities/transaction.entity";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@smart-canteen/prisma";
 
 export class PrismaTransactionRepository implements ITransactionRepository {
   async findMany(

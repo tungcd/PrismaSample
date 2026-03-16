@@ -4,7 +4,7 @@ import {
   CreateOrderDTO,
 } from "@/domain/repositories/order.repository.interface";
 import { prisma } from "../prisma-client";
-import { OrderStatus, PaymentStatus } from "@prisma/client";
+import { OrderStatus, PaymentStatus } from "@smart-canteen/prisma";
 import { OrderEntity } from "@/domain/entities/order.entity";
 
 export class PrismaOrderRepository implements IOrderRepository {

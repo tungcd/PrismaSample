@@ -1,4 +1,4 @@
-import { TopUpRequest, Prisma } from "@prisma/client";
+import { TopUpRequest, Prisma } from "@smart-canteen/prisma";
 import { prisma } from "@/lib/prisma";
 import { TopUpEntity } from "@/domain/entities/top-up.entity";
 import {

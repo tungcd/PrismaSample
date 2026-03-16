@@ -4,7 +4,7 @@ import {
   FindWalletsParams,
 } from "@/domain/repositories/wallet.repository.interface";
 import { WalletEntity } from "@/domain/entities/wallet.entity";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@smart-canteen/prisma";
 
 export class PrismaWalletRepository implements IWalletRepository {
   async findMany(

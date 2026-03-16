@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@smart-canteen/prisma";
 
 const prisma = new PrismaClient();
 

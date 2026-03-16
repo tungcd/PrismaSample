@@ -6,7 +6,7 @@ import {
   FindSuppliersParams,
 } from "@/domain/repositories/supplier.repository.interface";
 import { SupplierEntity } from "@/domain/entities/supplier.entity";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "@smart-canteen/prisma";
 
 export class PrismaSupplierRepository implements ISupplierRepository {
   async findMany(

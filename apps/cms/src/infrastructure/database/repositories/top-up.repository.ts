@@ -46,7 +46,9 @@ export class PrismaTopUpRepository implements ITopUpRepository {
     };
   }
 
-  async findMany(params: FindTopUpsParams): Promise<{ topUps: TopUpEntity[]; total: number }> {
+  async findMany(
+    params: FindTopUpsParams,
+  ): Promise<{ topUps: TopUpEntity[]; total: number }> {
     const {
       page = 1,
       pageSize = 10,
@@ -202,7 +204,9 @@ export class PrismaTopUpRepository implements ITopUpRepository {
     return prisma.topUpRequest.count();
   }
 
-  async countByStatus(status: "PENDING" | "APPROVED" | "REJECTED"): Promise<number> {
+  async countByStatus(
+    status: "PENDING" | "APPROVED" | "REJECTED",
+  ): Promise<number> {
     return prisma.topUpRequest.count({
       where: { status },
     });
@@ -260,7 +264,9 @@ export class PrismaTopUpRepository implements ITopUpRepository {
     });
 
     if (!approver) {
-      throw new Error(`User with ID ${data.approvedBy} not found. Cannot approve top-up request.`);
+      throw new Error(
+        `User with ID ${data.approvedBy} not found. Cannot approve top-up request.`,
+      );
     }
 
     // Use transaction to update top-up request and wallet balance
@@ -357,7 +363,9 @@ export class PrismaTopUpRepository implements ITopUpRepository {
     });
 
     if (!approver) {
-      throw new Error(`User with ID ${data.approvedBy} not found. Cannot reject top-up request.`);
+      throw new Error(
+        `User with ID ${data.approvedBy} not found. Cannot reject top-up request.`,
+      );
     }
 
     // Check if the top-up request exists and is pending

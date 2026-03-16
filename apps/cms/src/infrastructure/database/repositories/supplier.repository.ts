@@ -80,10 +80,7 @@ export class PrismaSupplierRepository implements ISupplierRepository {
     return supplier as SupplierEntity;
   }
 
-  async update(
-    id: number,
-    data: UpdateSupplierDTO,
-  ): Promise<SupplierEntity> {
+  async update(id: number, data: UpdateSupplierDTO): Promise<SupplierEntity> {
     const supplier = await prisma.supplier.update({
       where: { id },
       data: {

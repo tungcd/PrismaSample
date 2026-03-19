@@ -5,9 +5,9 @@ import {
   OnGatewayInit,
   WebSocketServer,
 } from "@nestjs/websockets";
-import { Logger, UseGuards } from "@nestjs/common";
+import { Logger } from "@nestjs/common";
 import { Server, Socket } from "socket.io";
-import { WsAuthGuard } from "./ws-auth.guard";
+import { JwtService } from "@nestjs/jwt";
 
 /**
  * Base WebSocket Gateway
@@ -25,7 +25,6 @@ import { WsAuthGuard } from "./ws-auth.guard";
   },
   namespace: "/", // Default namespace
 })
-@UseGuards(WsAuthGuard)
 export class WebSocketsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
@@ -37,41 +36,80 @@ export class WebSocketsGateway
   // Track online users: userId → Set<socketId>
   private onlineUsers = new Map<number, Set<string>>();
 
+  constructor(private jwtService: JwtService) {}
+
   afterInit(server: Server) {
     this.logger.log("WebSocket Gateway initialized");
   }
 
   async handleConnection(client: Socket) {
-    const user = client.data.user;
+    try {
+      // Extract JWT token from handshake
+      const token = this.extractToken(client);
 
-    if (!user) {
-      this.logger.warn(`Connection rejected: No user data`);
+      if (!token) {
+        this.logger.warn(`Connection rejected: No token provided`);
+        client.disconnect();
+        return;
+      }
+
+      // Verify JWT
+      const payload = await this.jwtService.verifyAsync(token, {
+        secret: process.env.JWT_SECRET,
+      });
+
+      // Set user data
+      const user = {
+        userId: payload.sub,
+        email: payload.email,
+        role: payload.role,
+      };
+      client.data.user = user;
+
+      // Track user connection
+      if (!this.onlineUsers.has(user.userId)) {
+        this.onlineUsers.set(user.userId, new Set());
+      }
+      this.onlineUsers.get(user.userId)!.add(client.id);
+
+      // Join user to their personal room (for targeted notifications)
+      await client.join(`user:${user.userId}`);
+
+      // Join role-based rooms
+      await client.join(`role:${user.role}`);
+
+      this.logger.log(
+        `Client connected: ${client.id} | User: ${user.email} (ID: ${user.userId}) | Role: ${user.role} | Online users: ${this.onlineUsers.size}`,
+      );
+
+      // Notify client of successful connection
+      client.emit("connection:success", {
+        message: "Connected to Smart Canteen WebSocket",
+        userId: user.userId,
+        socketId: client.id,
+      });
+    } catch (error) {
+      this.logger.error(`WebSocket authentication failed: ${error.message}`);
       client.disconnect();
-      return;
+    }
+  }
+
+  private extractToken(client: Socket): string | null {
+    // Try query parameter
+    const tokenFromQuery = client.handshake.query?.token as string;
+    if (tokenFromQuery) return tokenFromQuery;
+
+    // Try auth object (client sends: auth: { token })
+    const tokenFromAuth = client.handshake.auth?.token as string;
+    if (tokenFromAuth) return tokenFromAuth;
+
+    // Try authorization header
+    const authHeader = client.handshake.headers?.authorization;
+    if (authHeader?.startsWith("Bearer ")) {
+      return authHeader.substring(7);
     }
 
-    // Track user connection
-    if (!this.onlineUsers.has(user.userId)) {
-      this.onlineUsers.set(user.userId, new Set());
-    }
-    this.onlineUsers.get(user.userId)!.add(client.id);
-
-    // Join user to their personal room (for targeted notifications)
-    await client.join(`user:${user.userId}`);
-
-    // Join role-based rooms
-    await client.join(`role:${user.role}`);
-
-    this.logger.log(
-      `Client connected: ${client.id} | User: ${user.email} (ID: ${user.userId}) | Role: ${user.role} | Online users: ${this.onlineUsers.size}`,
-    );
-
-    // Notify client of successful connection
-    client.emit("connection:success", {
-      message: "Connected to Smart Canteen WebSocket",
-      userId: user.userId,
-      socketId: client.id,
-    });
+    return null;
   }
 
   handleDisconnect(client: Socket) {

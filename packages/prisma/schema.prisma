@@ -511,6 +511,7 @@ enum NotificationType {
   ORDER_CANCELLED
   PAYMENT_SUCCESS
   PAYMENT_FAILED
+  TOP_UP_REQUEST   // Parent created top-up request
   TOP_UP_APPROVED
   TOP_UP_REJECTED
   LOW_BALANCE

@@ -3,23 +3,67 @@ import {
   Injectable,
   NotFoundException,
 } from "@nestjs/common";
-import { Role, TopUpStatus } from "@smart-canteen/prisma";
+import {
+  Role,
+  TopUpStatus,
+  NotificationType,
+  NotificationPriority,
+} from "@smart-canteen/prisma";
 import { PrismaService } from "../prisma/prisma.service";
+import { NotificationsService } from "../notifications/notifications.service";
 import { CreateTopUpRequestDto } from "./dto/create-top-up-request.dto";
 
 @Injectable()
 export class TopUpRequestsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async create(userId: number, dto: CreateTopUpRequestDto) {
-    return this.prisma.topUpRequest.create({
+    const topUpRequest = await this.prisma.topUpRequest.create({
       data: {
         userId,
         amount: dto.amount,
         proofImage: dto.proofImage,
         notes: dto.notes,
       },
+      include: {
+        user: true,
+      },
     });
+
+    // Notify all admins and managers about new top-up request
+    const formattedAmount = new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
+    }).format(dto.amount);
+
+    await this.notificationsService.broadcastToRole(Role.ADMIN, {
+      title: "💰 Yêu cầu nạp tiền mới",
+      message: `${topUpRequest.user.name} đã yêu cầu nạp ${formattedAmount}`,
+      type: NotificationType.TOP_UP_REQUEST,
+      priority: NotificationPriority.HIGH,
+      metadata: {
+        topUpRequestId: topUpRequest.id,
+        userId: topUpRequest.userId,
+        amount: dto.amount,
+      },
+    });
+
+    await this.notificationsService.broadcastToRole(Role.MANAGER, {
+      title: "💰 Yêu cầu nạp tiền mới",
+      message: `${topUpRequest.user.name} đã yêu cầu nạp ${formattedAmount}`,
+      type: NotificationType.TOP_UP_REQUEST,
+      priority: NotificationPriority.HIGH,
+      metadata: {
+        topUpRequestId: topUpRequest.id,
+        userId: topUpRequest.userId,
+        amount: dto.amount,
+      },
+    });
+
+    return topUpRequest;
   }
 
   async findAll(userId: number, role: Role) {

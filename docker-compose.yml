@@ -54,6 +54,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=your-super-secret-key-change-this-in-production
+      - API_URL=http://api:4000
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
     ports:

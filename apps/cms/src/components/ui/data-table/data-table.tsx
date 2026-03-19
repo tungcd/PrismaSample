@@ -273,8 +273,8 @@ export function DataTable<T extends { id: string | number }>({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Tất cả</SelectItem>
-            {column.filter.options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
+            {column.filter.options.map((option, index) => (
+              <SelectItem key={`${option.value}-${index}`} value={option.value}>
                 {option.label}
               </SelectItem>
             ))}
@@ -315,8 +315,8 @@ export function DataTable<T extends { id: string | number }>({
         <Table>
           <TableHeader>
             <TableRow>
-              {config.columns.map((column) => (
-                <TableHead key={column.key} className={column.headerClassName}>
+              {config.columns.map((column, index) => (
+                <TableHead key={`${column.key}-${index}`}>
                   <DataTableColumnHeader
                     label={column.label}
                     sortable={column.sortable}
@@ -334,8 +334,8 @@ export function DataTable<T extends { id: string | number }>({
               ) : null}
             </TableRow>
             <TableRow>
-              {config.columns.map((column) => (
-                <TableHead key={`filter-${column.key}`}>
+              {config.columns.map((column, index) => (
+                <TableHead key={`filter-${column.key}-${index}`}>
                   {renderFilter(column)}
                 </TableHead>
               ))}
@@ -375,11 +375,11 @@ export function DataTable<T extends { id: string | number }>({
                 </TableCell>
               </TableRow>
             ) : (
-              data.map((item) => (
-                <TableRow key={item.id}>
-                  {config.columns.map((column) => (
+              data.map((item, index) => (
+                <TableRow key={`${item.id}-${index}`}>
+                  {config.columns.map((column, colIndex) => (
                     <TableCell
-                      key={`${item.id}-${column.key}`}
+                      key={`${item.id}-${column.key}-${colIndex}`}
                       className={column.className}
                     >
                       {renderCell(column, item)}

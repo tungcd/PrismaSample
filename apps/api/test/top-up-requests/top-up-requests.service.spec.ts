@@ -14,9 +14,13 @@ describe("TopUpRequestsService", () => {
     },
   };
 
+  const notificationsService = {
+    broadcastToRole: jest.fn(),
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    service = new TopUpRequestsService(prisma as any);
+    service = new TopUpRequestsService(prisma as any, notificationsService as any);
   });
 
   it("findAll should return all for admin", async () => {
@@ -68,7 +72,12 @@ describe("TopUpRequestsService", () => {
   });
 
   it("create should persist request payload", async () => {
-    prisma.topUpRequest.create.mockResolvedValue({ id: 9 });
+    prisma.topUpRequest.create.mockResolvedValue({
+      id: 9,
+      userId: 2,
+      amount: 10000,
+      user: { id: 2, name: "Test User" },
+    });
 
     await service.create(2, {
       amount: 10000,
@@ -83,7 +92,18 @@ describe("TopUpRequestsService", () => {
         proofImage: "img",
         notes: "note",
       },
+      include: {
+        user: true,
+      },
     });
+
+    expect(notificationsService.broadcastToRole).toHaveBeenCalledWith(
+      Role.ADMIN,
+      expect.objectContaining({
+        title: "💰 Yêu cầu nạp tiền mới",
+        type: "TOP_UP_REQUEST",
+      }),
+    );
   });
 
   it("findAll should scope by user for parent role", async () => {

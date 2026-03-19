@@ -17,7 +17,11 @@ export interface Notification {
   metadata?: any;
 }
 
-export function useNotifications() {
+interface UseNotificationsOptions {
+  onNotification?: (notification: Notification) => void | Promise<void>;
+}
+
+export function useNotifications(options?: UseNotificationsOptions) {
   const { socket, isConnected } = useSocket();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -27,10 +31,19 @@ export function useNotifications() {
   useEffect(() => {
     if (!socket) return;
 
-    const handleNewNotification = (notification: Notification) => {
+    const handleNewNotification = async (notification: Notification) => {
       console.log("[Notification] New notification received:", notification);
       setNotifications((prev) => [notification, ...prev]);
       setUnreadCount((prev) => prev + 1);
+
+      // Call callback to trigger data refresh
+      if (options?.onNotification) {
+        try {
+          await options.onNotification(notification);
+        } catch (error) {
+          console.error("[Notification] Callback error:", error);
+        }
+      }
 
       // Show browser notification
       if ("Notification" in window && Notification.permission === "granted") {

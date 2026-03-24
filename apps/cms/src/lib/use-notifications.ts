@@ -29,10 +29,20 @@ export function useNotifications(options?: UseNotificationsOptions) {
 
   // Listen for new notifications in real-time
   useEffect(() => {
-    if (!socket) return;
+    console.log("[useNotifications CMS] Effect running, socket:", {
+      exists: !!socket,
+      isConnected,
+    });
+
+    if (!socket) {
+      console.log("[useNotifications CMS] No socket, skipping listeners");
+      return;
+    }
+
+    console.log("[useNotifications CMS] Setting up notification:new listener");
 
     const handleNewNotification = async (notification: Notification) => {
-      console.log("[Notification] New notification received:", notification);
+      console.log("[Notification CMS] New notification received:", notification);
       setNotifications((prev) => [notification, ...prev]);
       setUnreadCount((prev) => prev + 1);
 
@@ -41,7 +51,7 @@ export function useNotifications(options?: UseNotificationsOptions) {
         try {
           await options.onNotification(notification);
         } catch (error) {
-          console.error("[Notification] Callback error:", error);
+          console.error("[Notification CMS] Callback error:", error);
         }
       }
 
@@ -55,7 +65,7 @@ export function useNotifications(options?: UseNotificationsOptions) {
     };
 
     const handleNotificationRead = (data: { notificationId: number }) => {
-      console.log("[Notification] Notification marked as read:", data);
+      console.log("[Notification CMS] Notification marked as read:", data);
       setNotifications((prev) =>
         prev.map((n) =>
           n.id === data.notificationId
@@ -69,7 +79,10 @@ export function useNotifications(options?: UseNotificationsOptions) {
     socket.on("notification:new", handleNewNotification);
     socket.on("notification:read", handleNotificationRead);
 
+    console.log("[useNotifications CMS] Listeners attached to socket");
+
     return () => {
+      console.log("[useNotifications CMS] Cleaning up listeners");
       socket.off("notification:new", handleNewNotification);
       socket.off("notification:read", handleNotificationRead);
     };

@@ -27,6 +27,7 @@ export function NotificationBell({ token }: NotificationBellProps) {
     setMounted(true);
   }, []);
 
+  // Fetch initial notifications from REST API
   useEffect(() => {
     if (mounted && token) {
       fetchNotifications(token);

@@ -861,7 +861,225 @@ async function main() {
   }
 
   console.log(`✅ Created ${allProducts.length} products across 4 categories`);
+  // ============================================
+  // Create Chat Rooms & Messages (Phase 1 - DIRECT chat only)
+  // ============================================
+  console.log("Creating chat rooms and messages...");
 
+  const rooms = [];
+  const chatMessages = [];
+
+  // Create 5 DIRECT chat rooms between parents
+  for (let i = 0; i < 5; i++) {
+    const parent1 = parents[i];
+    const parent2 = parents[i + 5];
+
+    const room = await prisma.room.create({
+      data: {
+        type: "DIRECT",
+        name: null, // Auto-generated for DIRECT
+        avatar: null,
+        createdBy: parent1.id,
+        isActive: true,
+      },
+    });
+    rooms.push(room);
+
+    // Add members
+    await prisma.roomMember.createMany({
+      data: [
+        {
+          roomId: room.id,
+          userId: parent1.id,
+          role: "MEMBER",
+          joinedAt: new Date(),
+        },
+        {
+          roomId: room.id,
+          userId: parent2.id,
+          role: "MEMBER",
+          joinedAt: new Date(),
+        },
+      ],
+    });
+
+    // Create some messages in each room
+    const messageCount = randomInt(3, 8);
+    for (let j = 0; j < messageCount; j++) {
+      const sender = j % 2 === 0 ? parent1 : parent2;
+      const messageTexts = [
+        "Chào bạn! Bạn có thể chia sẻ thông tin về thực đơn tháng này không?",
+        "Xin chào, tôi thấy con mình rất thích món phở ở canteen.",
+        "Bạn đã nạp tiền cho con chưa? Tôi đang có vấn đề với app.",
+        "Cảm ơn bạn đã giúp đỡ! Con tôi giờ đã ăn uống đầy đủ hơn.",
+        "Mình nghĩ nên tổ chức một buổi gặp gỡ phụ huynh.",
+        "Bạn biết không, canteen có thêm món mới rất ngon!",
+        "Tôi muốn hỏi về chương trình khuyến mãi tháng này.",
+        "Con bạn học lớp mấy? Con tôi lớp 5A đấy.",
+      ];
+
+      const message = await prisma.chatMessage.create({
+        data: {
+          roomId: room.id,
+          senderId: sender.id,
+          content: randomItem(messageTexts),
+          contentType: "TEXT",
+          status: "READ",
+          createdAt: new Date(Date.now() - (messageCount - j) * 3600000), // Spread over hours
+        },
+      });
+      chatMessages.push(message);
+
+      // Mark as read by both members for testing
+      await prisma.messageRead.createMany({
+        data: [
+          {
+            messageId: message.id,
+            userId: parent1.id,
+            readAt: new Date(),
+          },
+          {
+            messageId: message.id,
+            userId: parent2.id,
+            readAt: new Date(),
+          },
+        ],
+      });
+    }
+
+    // Update room lastMessage metadata
+    const lastMessage = chatMessages[chatMessages.length - 1];
+    await prisma.room.update({
+      where: { id: room.id },
+      data: {
+        lastMessageAt: lastMessage.createdAt,
+        lastMessagePreview: lastMessage.content.substring(0, 100),
+      },
+    });
+
+    // Update unread counts for members (set to 0 since all read)
+    await prisma.roomMember.updateMany({
+      where: { roomId: room.id },
+      data: {
+        lastSeenAt: new Date(),
+        lastSeenMessageId: lastMessage.id,
+        unreadCount: 0,
+      },
+    });
+  }
+
+  // Create 2 rooms with unread messages (for testing)
+  for (let i = 10; i < 12; i++) {
+    const parent1 = parents[i];
+    const parent2 = parents[i + 10];
+
+    const room = await prisma.room.create({
+      data: {
+        type: "DIRECT",
+        name: null,
+        avatar: null,
+        createdBy: parent1.id,
+        isActive: true,
+      },
+    });
+    rooms.push(room);
+
+    await prisma.roomMember.createMany({
+      data: [
+        {
+          roomId: room.id,
+          userId: parent1.id,
+          role: "MEMBER",
+          joinedAt: new Date(),
+        },
+        {
+          roomId: room.id,
+          userId: parent2.id,
+          role: "MEMBER",
+          joinedAt: new Date(),
+        },
+      ],
+    });
+
+    // Create messages
+    const messagesData = [
+      { sender: parent1, text: "Xin chào! Bạn có rảnh không?" },
+      { sender: parent2, text: "Chào bạn, có chuyện gì vậy?" },
+      {
+        sender: parent1,
+        text: "Tôi muốn hỏi về món ăn cho con, con bạn thích món nào?",
+      },
+      // Last 2 messages unread by parent1
+      { sender: parent2, text: "Con tôi rất thích bánh mì và phở." },
+      { sender: parent2, text: "Bạn có thể thử cho con ăn thử xem." },
+    ];
+
+    let lastMsg;
+    for (let j = 0; j < messagesData.length; j++) {
+      const { sender, text } = messagesData[j];
+      const message = await prisma.chatMessage.create({
+        data: {
+          roomId: room.id,
+          senderId: sender.id,
+          content: text,
+          contentType: "TEXT",
+          status: j < 3 ? "READ" : "SENT", // Last 2 are unread
+          createdAt: new Date(Date.now() - (messagesData.length - j) * 1800000),
+        },
+      });
+      lastMsg = message;
+
+      // Mark as read by sender
+      await prisma.messageRead.create({
+        data: {
+          messageId: message.id,
+          userId: sender.id,
+          readAt: new Date(),
+        },
+      });
+
+      // Mark first 3 as read by both
+      if (j < 3) {
+        const otherUser = sender.id === parent1.id ? parent2 : parent1;
+        await prisma.messageRead.create({
+          data: {
+            messageId: message.id,
+            userId: otherUser.id,
+            readAt: new Date(),
+          },
+        });
+      }
+    }
+
+    await prisma.room.update({
+      where: { id: room.id },
+      data: {
+        lastMessageAt: lastMsg!.createdAt,
+        lastMessagePreview: lastMsg!.content.substring(0, 100),
+      },
+    });
+
+    // Parent1 has 2 unread messages
+    await prisma.roomMember.update({
+      where: { roomId_userId: { roomId: room.id, userId: parent1.id } },
+      data: {
+        lastSeenMessageId: chatMessages[chatMessages.length - 3]?.id,
+        unreadCount: 2,
+      },
+    });
+
+    // Parent2 has all read
+    await prisma.roomMember.update({
+      where: { roomId_userId: { roomId: room.id, userId: parent2.id } },
+      data: {
+        lastSeenMessageId: lastMsg!.id,
+        unreadCount: 0,
+      },
+    });
+  }
+
+  console.log(`✅ Created ${rooms.length} chat rooms with messages`);
+  console.log(`✅ Created ${chatMessages.length}+ chat messages`);
   console.log("\n✨ Database seeded successfully!");
   console.log("\n� Summary:");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━");
@@ -873,6 +1091,8 @@ async function main() {
   console.log(`📦 Products: ${allProducts.length}`);
   console.log(`🏢 Suppliers: ${suppliers.length}`);
   console.log(`💼 Categories: 4`);
+  console.log(`💬 Chat Rooms: ${rooms.length} DIRECT conversations`);
+  console.log(`📨 Messages: ${chatMessages.length}+ (some with unread status)`);
   console.log("\n📝 Default Login Credentials:");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log("Admin (CMS):");

@@ -84,14 +84,23 @@ export class NotificationGateway {
    * Emit notification to specific user (called by NotificationService)
    */
   async emitNotificationToUser(userId: number, notification: any) {
+    console.log('[NotificationGateway] emitNotificationToUser called:', {
+      userId,
+      notificationId: notification.id,
+      title: notification.title,
+    });
+
     const isOnline = this.webSocketsGateway.isUserOnline(userId);
+    console.log('[NotificationGateway] User online status:', { userId, isOnline });
 
     if (isOnline) {
+      console.log('[NotificationGateway] Emitting notification:new to user:', userId);
       this.webSocketsGateway.emitToUser(
         userId,
         "notification:new",
         notification,
       );
+      console.log('[NotificationGateway] Notification emitted successfully');
       this.logger.log(
         `Notification ${notification.id} pushed to online user ${userId}`,
       );

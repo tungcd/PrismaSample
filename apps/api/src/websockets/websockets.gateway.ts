@@ -73,10 +73,22 @@ export class WebSocketsGateway
       this.onlineUsers.get(user.userId)!.add(client.id);
 
       // Join user to their personal room (for targeted notifications)
-      await client.join(`user:${user.userId}`);
+      const userRoom = `user:${user.userId}`;
+      await client.join(userRoom);
+      console.log('[WebSocketsGateway] User joined room:', {
+        socketId: client.id,
+        userId: user.userId,
+        room: userRoom,
+      });
 
       // Join role-based rooms
-      await client.join(`role:${user.role}`);
+      const roleRoom = `role:${user.role}`;
+      await client.join(roleRoom);
+      console.log('[WebSocketsGateway] User joined role room:', {
+        socketId: client.id,
+        role: user.role,
+        room: roleRoom,
+      });
 
       this.logger.log(
         `Client connected: ${client.id} | User: ${user.email} (ID: ${user.userId}) | Role: ${user.role} | Online users: ${this.onlineUsers.size}`,
@@ -162,7 +174,26 @@ export class WebSocketsGateway
    * Emit event to specific user (all their connected devices)
    */
   emitToUser(userId: number, event: string, data: any) {
-    this.server.to(`user:${userId}`).emit(event, data);
+    const room = `user:${userId}`;
+    console.log('[WebSocketsGateway] emitToUser:', {
+      userId,
+      event,
+      room,
+      dataPreview: data?.title || data?.message || JSON.stringify(data).substring(0, 50),
+    });
+    
+    // Get sockets in room for debugging
+    const socketsInRoom = this.server.in(room).allSockets();
+    socketsInRoom.then(sockets => {
+      console.log('[WebSocketsGateway] Sockets in room:', {
+        room,
+        count: sockets.size,
+        socketIds: Array.from(sockets),
+      });
+    });
+
+    this.server.to(room).emit(event, data);
+    console.log('[WebSocketsGateway] Event emitted to room:', room);
   }
 
   /**

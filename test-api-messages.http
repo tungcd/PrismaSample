@@ -1,0 +1,11 @@
+### Test get messages - CLIENT user (userId 1)
+GET http://localhost:4000/api/v1/chat/rooms/1/messages?limit=50
+Authorization: Bearer YOUR_CLIENT_TOKEN_HERE
+
+### Test get messages - ADMIN user
+GET http://localhost:4000/api/v1/chat/rooms/1/messages?limit=50
+Authorization: Bearer YOUR_ADMIN_TOKEN_HERE
+
+### Get user info to verify userId
+GET http://localhost:4000/api/v1/auth/me
+Authorization: Bearer YOUR_TOKEN_HERE

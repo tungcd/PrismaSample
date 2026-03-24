@@ -47,18 +47,24 @@ export function SocketProvider({
 
   const connect = useCallback(
     (token: string) => {
+      console.log("[Socket CMS] Connect called, socket state:", {
+        exists: !!socket,
+        connected: socket?.connected,
+        isConnecting: isConnecting.current,
+      });
+
       if (socket?.connected) {
-        console.log("[Socket] Already connected");
+        console.log("[Socket CMS] Already connected");
         return;
       }
 
       if (isConnecting.current) {
-        console.log("[Socket] Connection already in progress");
+        console.log("[Socket CMS] Connection already in progress");
         return;
       }
 
       isConnecting.current = true;
-      console.log("[Socket] Connecting to", apiUrl);
+      console.log("[Socket CMS] Connecting to", apiUrl);
 
       const newSocket = io(apiUrl, {
         transports: ["websocket", "polling"],
@@ -69,35 +75,35 @@ export function SocketProvider({
       });
 
       newSocket.on("connect", () => {
-        console.log("[Socket] Connected with ID:", newSocket.id);
+        console.log("[Socket CMS] Connected with ID:", newSocket.id);
         setIsConnected(true);
         isConnecting.current = false;
       });
 
       newSocket.on("disconnect", (reason) => {
-        console.log("[Socket] Disconnected:", reason);
+        console.log("[Socket CMS] Disconnected:", reason);
         setIsConnected(false);
         isConnecting.current = false;
       });
 
       newSocket.on("connect_error", (error) => {
-        console.error("[Socket] Connection error:", error.message);
+        console.error("[Socket CMS] Connection error:", error.message);
         setIsConnected(false);
         isConnecting.current = false;
       });
 
       newSocket.on("connection:success", (data) => {
-        console.log("[Socket] Gateway confirmed connection:", data);
+        console.log("[Socket CMS] Connection confirmed by server:", data);
       });
 
       setSocket(newSocket);
+      console.log("[Socket CMS] Socket instance set, connecting...");
     },
     [socket, apiUrl],
   );
 
   const disconnect = useCallback(() => {
     if (socket) {
-      console.log("[Socket] Disconnecting...");
       socket.disconnect();
       setSocket(null);
       setIsConnected(false);

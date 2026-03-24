@@ -23,23 +23,23 @@ services:
     networks:
       - smart-canteen-network
 
-  # Redis Cache
-  redis:
-    image: redis:7-alpine
-    container_name: smart-canteen-redis
-    restart: unless-stopped
-    command: redis-server --appendonly yes
-    ports:
-      - '6379:6379'
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - smart-canteen-network
+  # Redis Cache - TEMPORARILY DISABLED
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: smart-canteen-redis
+  #   restart: unless-stopped
+  #   command: redis-server --appendonly yes
+  #   ports:
+  #     - '6379:6379'
+  #   volumes:
+  #     - redis_data:/data
+  #   healthcheck:
+  #     test: ['CMD', 'redis-cli', 'ping']
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - smart-canteen-network
 
   # CMS Admin App
   cms:
@@ -67,8 +67,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+      # redis:
+      #   condition: service_healthy
     networks:
       - smart-canteen-network
 
@@ -97,8 +97,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+      # redis:
+      #   condition: service_healthy
     networks:
       - smart-canteen-network
 
@@ -128,16 +128,16 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+      # redis:
+      #   condition: service_healthy
     networks:
       - smart-canteen-network
 
 volumes:
   postgres_data:
     driver: local
-  redis_data:
-    driver: local
+  # redis_data:
+  #   driver: local
 
 networks:
   smart-canteen-network:

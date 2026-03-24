@@ -12,14 +12,23 @@ function SocketConnector() {
 
   useEffect(() => {
     setMounted(true);
+    console.log("[SocketConnector CMS] Component mounted");
   }, []);
 
   useEffect(() => {
+    console.log("[SocketConnector CMS] Check connect:", {
+      mounted,
+      hasConnected: hasConnected.current,
+      isConnected,
+    });
+
     if (!mounted || hasConnected.current || isConnected) return;
 
     const token = getToken();
+    console.log("[SocketConnector CMS] Token:", token ? "exists" : "missing");
+    
     if (token) {
-      console.log("[SocketConnector] Auto-connecting with token");
+      console.log("[SocketConnector CMS] Calling connect with token");
       hasConnected.current = true;
       connect(token);
     }

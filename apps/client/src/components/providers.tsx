@@ -24,7 +24,6 @@ function SocketConnector() {
 
     const token = getToken();
     if (token) {
-      console.log("[SocketConnector] Auto-connecting with token");
       hasConnected.current = true;
       connect(token);
     }

@@ -15,6 +15,7 @@ datasource db {
 // CHAT SYSTEM (Must be defined before User model)
 // ============================================
 
+// OLD SYSTEM: CMS Support Chat (Keep for backward compatibility)
 model Conversation {
   id          Int              @id @default(autoincrement())
   type        ConversationType @default(SUPPORT)
@@ -81,6 +82,191 @@ model Message {
 }
 
 // ============================================
+// NEW CHAT SYSTEM: Client ↔ Client Chat
+// ============================================
+
+model Room {
+  id          Int       @id @default(autoincrement())
+  type        RoomType  @default(DIRECT)
+  name        String?   // Required for GROUP, null for DIRECT
+  avatar      String?   // Group avatar URL
+  createdBy   Int?      // User ID who created (for GROUP)
+  isActive    Boolean   @default(true)
+  
+  // Metadata
+  lastMessageAt      DateTime?
+  lastMessagePreview String?   // Last 100 chars for preview
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  creator  User?        @relation("RoomCreator", fields: [createdBy], references: [id])
+  members  RoomMember[]
+  messages ChatMessage[]
+  
+  @@index([type])
+  @@index([isActive])
+  @@index([lastMessageAt])
+  @@index([createdBy])
+}
+
+enum RoomType {
+  DIRECT   // 1-1 chat between 2 users
+  GROUP    // 3+ members group chat  
+  SUPPORT  // CMS support (future migration from Conversation)
+}
+
+model RoomMember {
+  roomId         Int
+  userId         Int
+  role           MemberRole    @default(MEMBER)
+  
+  // Read tracking
+  lastSeenAt        DateTime?
+  lastSeenMessageId Int?
+  unreadCount       Int         @default(0)
+  
+  // Settings
+  isMuted        Boolean       @default(false)
+  isPinned       Boolean       @default(false)
+  
+  // Join/Leave tracking
+  joinedAt   DateTime  @default(now())
+  leftAt     DateTime? // When left group (null = still member)
+  
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@id([roomId, userId])
+  @@index([userId, isPinned])
+  @@index([roomId, leftAt])
+}
+
+enum MemberRole {
+  OWNER   // Created group, full permissions
+  ADMIN   // Can manage members, settings
+  MEMBER  // Can only send messages
+}
+
+model ChatMessage {
+  id      Int    @id @default(autoincrement())
+  roomId  Int
+  senderId Int
+  
+  // Content
+  content     String    @db.Text
+  contentType MessageContentType @default(TEXT)
+  
+  // Reply/Thread
+  replyToId   Int?      // Which message this replies to
+  
+  // Status
+  status      MessageStatus @default(SENT)
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  deletedBy   Int?      // User ID who deleted (for everyone)
+  deletedFor  Int[]     @default([]) // User IDs who deleted for themselves
+  
+  // System messages
+  isSystemMessage Boolean @default(false)
+  metadata        Json?   // Extra data for embedded content
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  room        Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  sender      User          @relation("ChatMessageSender", fields: [senderId], references: [id])
+  replyTo     ChatMessage?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  replies     ChatMessage[] @relation("MessageReplies")
+  attachments Attachment[]
+  reactions   MessageReaction[]
+  reads       MessageRead[]
+  
+  @@index([roomId, createdAt])
+  @@index([senderId])
+  @@index([replyToId])
+  @@index([roomId, status])
+}
+
+enum MessageContentType {
+  TEXT      // Plain text message
+  IMAGE     // Image attachment
+  FILE      // File attachment
+  AUDIO     // Voice message
+  VIDEO     // Video message
+  LOCATION  // Location sharing
+  SYSTEM    // System notification
+}
+
+enum MessageStatus {
+  SENDING   // Client is sending
+  SENT      // Delivered to server
+  DELIVERED // At least 1 member received via socket
+  READ      // All members read (DIRECT only)
+  FAILED    // Failed to send
+}
+
+model Attachment {
+  id          Int    @id @default(autoincrement())
+  messageId   Int
+  
+  filename    String
+  url         String    // S3 URL
+  mimeType    String    // image/jpeg, application/pdf, etc.
+  size        Int       // File size in bytes
+  
+  // Image-specific metadata
+  width       Int?
+  height      Int?
+  thumbnail   String?   // Thumbnail URL for images
+  
+  createdAt DateTime @default(now())
+  
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@index([messageId])
+}
+
+model MessageReaction {
+  messageId Int
+  userId    Int
+  emoji     String    // "👍", "❤️", "😂", etc.
+  
+  createdAt DateTime @default(now())
+  
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@id([messageId, userId, emoji])
+  @@index([messageId])
+  @@index([userId])
+}
+
+model MessageRead {
+  messageId Int
+  userId    Int
+  readAt    DateTime @default(now())
+  
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@id([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+  @@index([readAt])
+}
+
+model TypingIndicator {
+  roomId     Int
+  userId     Int
+  startedAt  DateTime @default(now())
+  expiresAt  DateTime // Auto-expire after 10 seconds
+  
+  @@id([roomId, userId])
+  @@index([roomId, expiresAt])
+}
+
+// ============================================
 // USER MANAGEMENT & AUTHENTICATION
 // ============================================
 
@@ -118,10 +304,17 @@ model User {
   sessions        Session[]
   inventoryTransactions InventoryTransaction[] @relation("InventoryPerformer")
   
-  // Chat relations
+  // OLD Chat relations (CMS Support)
   conversationsAsUser  Conversation[] @relation("UserConversations")
   conversationsAsAdmin Conversation[] @relation("AdminConversations")
   messages             Message[]
+  
+  // NEW Chat relations (Client ↔ Client)
+  createdRooms     Room[]            @relation("RoomCreator")
+  roomMemberships  RoomMember[]
+  chatMessages     ChatMessage[]     @relation("ChatMessageSender")
+  messageReactions MessageReaction[]
+  messageReads     MessageRead[]
   
   @@index([email])
   @@index([phone])

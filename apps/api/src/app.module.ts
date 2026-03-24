@@ -18,6 +18,7 @@ import { ReportsModule } from "./reports/reports.module";
 import { HealthModule } from "./health/health.module";
 import { ClientConfigModule } from "./client-config/client-config.module";
 import { WebSocketsModule } from "./websockets/websockets.module";
+import { ChatModule } from "./chat/chat.module";
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { WebSocketsModule } from "./websockets/websockets.module";
     HealthModule,
     ClientConfigModule,
     WebSocketsModule,
+    ChatModule,
   ],
 })
 export class AppModule {}

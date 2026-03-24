@@ -6,5 +6,6 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   // Middleware handles authentication redirect
+  // SocketProvider is already in root layout
   return <DashboardShell>{children}</DashboardShell>;
 }

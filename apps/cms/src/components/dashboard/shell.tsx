@@ -23,6 +23,7 @@ import {
   Ticket,
   Warehouse,
   BarChart3,
+  MessageCircle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { User } from "@/lib/auth-client";
@@ -57,6 +58,12 @@ const navigation: NavigationItem[] = [
     name: "Đơn hàng",
     href: "/dashboard/orders",
     icon: ShoppingCart,
+    roles: [Role.ADMIN, Role.MANAGER, Role.STAFF],
+  },
+  {
+    name: "Tin nhắn",
+    href: "/dashboard/chat",
+    icon: MessageCircle,
     roles: [Role.ADMIN, Role.MANAGER, Role.STAFF],
   },
   {
